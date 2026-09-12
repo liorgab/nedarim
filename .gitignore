@@ -1,7 +1,9 @@
 node_modules/
 out/
 dist/
-release/
+# `/` מוביל = שורש הפרויקט בלבד. בלעדיו הדפוס תופס כל תיקייה בשם הזה –
+# `tools/release/` נבלעה כך ומעולם לא נכנסה ל-git, והשחרור נכשל.
+/release/
 *.db
 *.db-shm
 *.db-wal
@@ -19,6 +21,8 @@ Thumbs.db
 
 # תוצרי בנייה מקומיים
 *.tsbuildinfo
+# האייקונים נוצרים מ-`npm run icon` ואינם נשמרים בריפו. ה-workflow של
+# השחרור מריץ אותו לפני האריזה – בלי זה electron-builder אורז בלי אייקון.
 build/icon.ico
 build/icon.png
 

@@ -43,6 +43,11 @@ jobs:
       - name: תיאור השחרור
         run: npm run release:notes -- ${{ github.ref_name }}
 
+      # האייקון נוצר ואינו נשמר בריפו; בלעדיו electron-builder אורז
+      # את היישום עם האייקון הכללי של Electron.
+      - name: אייקון
+        run: npm run icon
+
       # `npm run build` מריץ שוב check ו-test; כאן הם כבר רצו.
       - name: אריזה
         run: npx electron-vite build && npx electron-builder --win --x64
