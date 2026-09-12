@@ -36,6 +36,16 @@ export interface ImportField {
   example?: string;
   choices?: readonly string[];
   /**
+   * תרגום מהערך שהגבאי כותב לערך שב-DB.
+   *
+   * הכרחי כשהתבנית בעברית וה-CHECK באנגלית: "פעיל" → `active`,
+   * "נדר" → `vow`. בלי המיפוי הערך נכתב כמו שהוא ונדחה על אילוץ –
+   * שגיאת DB סתומה במקום ייבוא שעובד.
+   */
+  dbValues?: Readonly<Record<string, string>>;
+  /** ערך ה-DB כשהתא ריק ואין לעמודה ברירת מחדל משלה. */
+  defaultValue?: string | number;
+  /**
    * שדה שמצביע על יישות אחרת לפי מפתח אנושי.
    * `by` הוא ה-label של השדה המזהה באותה יישות.
    */
@@ -156,6 +166,7 @@ export const IMPORT_ENTITIES: readonly ImportEntity[] = [
         type: 'choice',
         required: false,
         choices: ['פעיל', 'לא פעיל'],
+        dbValues: { פעיל: 'active', 'לא פעיל': 'inactive' },
         help: 'ריק = פעיל',
         example: 'פעיל',
       },
@@ -207,8 +218,18 @@ export const IMPORT_ENTITIES: readonly ImportEntity[] = [
         type: 'choice',
         required: false,
         choices: ['נדר', 'זיכוי'],
+        dbValues: { נדר: 'vow', זיכוי: 'credit' },
+        defaultValue: 'vow',
         help: 'ריק = נדר',
         example: 'נדר',
+      },
+      {
+        label: 'סיבת זיכוי',
+        column: 'credit_reason',
+        type: 'text',
+        required: false,
+        help: 'חובה כשהסוג הוא "זיכוי"',
+        example: 'טעות רישום',
       },
       { label: 'הערות', column: 'notes', type: 'text', required: false },
     ],
