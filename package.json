@@ -10,6 +10,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "install:clean": "npm ci --ignore-scripts && node node_modules/electron/install.js",
     "dev": "electron-vite dev",
     "start": "electron-vite preview",
     "build": "npm run check && npm run test && electron-vite build && electron-builder --win --x64",
@@ -18,8 +19,6 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "import": "vite-node --config vitest.config.ts tools/import/cli.ts --",
-    "rebuild:electron": "electron-rebuild -f -w better-sqlite3",
-    "rebuild:node": "npm rebuild better-sqlite3 --build-from-source",
     "icon": "node tools/icon/make-icon.mjs",
     "proof:restore": "vite-node --config vitest.config.ts tools/proof/restore-proof.ts --",
     "proof:backfill": "vite-node --config vitest.config.ts tools/proof/backfill-report.ts --",
@@ -29,7 +28,6 @@
     "release:notes": "vite-node --config vitest.config.ts tools/release/write-notes.ts"
   },
   "devDependencies": {
-    "@electron/rebuild": "^3.7.2",
     "@eslint/js": "^9.39.5",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.20.1",

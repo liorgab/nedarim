@@ -23,7 +23,15 @@ jobs:
 
       # `npm ci` ולא `npm install`: מתקין בדיוק את מה שרשום ב-lock,
       # כך שהבדיקה רצה על אותן גרסאות בדיוק שרצות אצלך.
-      - run: npm ci
+      # `--ignore-scripts` בכוונה: ל-`better-sqlite3` יש `binding.gyp` ואין
+      # `install script`, ולכן npm מריץ לו `node-gyp rebuild` אוטומטי – שדורש
+      # Visual Studio ונכשל על runner נקי. הקומפילציה מיותרת ממילא: החבילה
+      # מגיעה עם prebuilds של N-API שטובים גם ל-Node וגם ל-Electron
+      # (`npmRebuild: false` ב-electron-builder).
+      - run: npm ci --ignore-scripts
+
+      # הסקריפט היחיד שכן נדרש: הורדת הבינארי של Electron.
+      - run: node node_modules/electron/install.js
 
       - name: טיפוסים ו-lint
         run: npm run check

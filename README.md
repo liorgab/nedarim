@@ -12,11 +12,17 @@
 ## הרצה
 
 ```bash
-npm install
-npm run dev      # הרצה בפיתוח
-npm run check    # tsc + eslint
-npm test         # Vitest
+npm run install:clean   # ראו הערה למטה – לא `npm install` רגיל
+npm run dev             # הרצה בפיתוח
+npm run check           # tsc + eslint
+npm test                # Vitest
 ```
+
+> **למה לא `npm install` רגיל:** ל-`better-sqlite3` יש `binding.gyp` ואין לו
+> `install script`, ולכן npm מריץ לו `node-gyp rebuild` אוטומטי שדורש
+> Visual Studio ונכשל על מכונה נקייה. הקומפילציה מיותרת – החבילה מגיעה עם
+> prebuilds של N-API שטובים גם ל-Node וגם ל-Electron. `install:clean`
+> מדלג על הסקריפטים ומוריד רק את הבינארי של Electron, שהוא היחיד שנדרש.
 
 ## ייבוא מהקובץ הישן (חד-פעמי)
 

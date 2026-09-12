@@ -34,10 +34,10 @@
 ## איך עובדים
 
 ```bash
-npm install
-npm run dev      # הרצה
-npm run check    # טיפוסים + lint – חייב לעבור
-npm test         # בדיקות – חייב לעבור
+npm run install:clean   # לא `npm install` – ראו README
+npm run dev             # הרצה
+npm run check           # טיפוסים + lint – חייב לעבור
+npm test                # בדיקות – חייב לעבור
 ```
 
 **בדיקות אינן אופציונליות.** כל שירות ב-`src/main/services` מגיע עם בדיקות
