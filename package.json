@@ -1,6 +1,6 @@
 {
   "name": "nedarim",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "מערכת ניהול נדרים, תרומות והוצאות לבית כנסת – יישום Windows עצמאי (Offline)",
   "license": "GPL-3.0-or-later",
   "private": false,
