@@ -273,6 +273,10 @@ describe('גיבוי ושחזור (F-100..F-102)', () => {
     expect(listBackups(backupDir())[0]!.valid).toBe(false);
   });
 
+  // כל גיבוי הוא עותק מלא של ה-DB עם manifest של SHA-256, וכאן נוצרים
+  // ארבעה. ~4.6 שניות במכונת פיתוח, ומעבר ל-5 שניות ב-runner של CI –
+  // מגבלת הזמן מורחבת נקודתית ולא גלובלית, כדי שבדיקה שנתקעת באמת
+  // עדיין תיפול מהר.
   it('שומר רק את N הגיבויים האחרונים', async () => {
     seedData();
     for (let i = 0; i < 4; i++) {
@@ -290,7 +294,7 @@ describe('גיבוי ושחזור (F-100..F-102)', () => {
     expect(listBackups(backupDir()).length).toBeGreaterThanOrEqual(2);
     pruneBackups(backupDir(), 2);
     expect(listBackups(backupDir())).toHaveLength(2);
-  });
+  }, 30_000);
 
   it('תזכורת גיבוי חיצוני (F-102)', async () => {
     expect(externalBackupReminder(db).due).toBe(true);
