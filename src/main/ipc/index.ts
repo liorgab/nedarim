@@ -13,6 +13,7 @@ import type {
   DonationInputDto,
   ExpenseFilterDto,
   ExpenseInputDto,
+  ImportModeDto,
   IpcChannel,
   LedgerFilterDto,
   LookupTableDto,
@@ -35,6 +36,20 @@ import {
   initDatabase,
 } from '../db';
 import { LATEST_SCHEMA_VERSION } from '../db/migrations';
+import { IMPORT_ENTITIES, importEntity } from '../import/catalog';
+import { IMPORT_MODES, MODE_INFO } from '../import/modes';
+import { TEMPLATE_FILE_NAME, writeTemplate } from '../import/template';
+import { isBackupFolder } from '../import/detect';
+import {
+  clearSession,
+  currentSession,
+  openImportFile,
+  preflight,
+  runImport,
+  updateSheet,
+  validateSession,
+} from '../import/session';
+import { confirmationMatches, deleteDatabase, deletionScope } from '../services/dangerZone';
 import {
   changeOwnPassword,
   createUser as createUserSvc,
@@ -658,6 +673,111 @@ const handlers: Record<IpcChannel, Handler> = {
   }) as Handler,
   'backup:openFolder': ((path: string) => {
     shell.showItemInFolder(path);
+  }) as Handler,
+
+  // -------------------------------------------------------------- ייבוא
+  'importer:catalog': () =>
+    IMPORT_ENTITIES.map((entity) => ({
+      id: entity.id,
+      label: entity.label,
+      sheet: entity.sheet,
+      intro: entity.intro,
+      dependsOn: [...entity.dependsOn],
+      fields: entity.fields.map((field) => ({
+        label: field.label,
+        type: field.type,
+        required: field.required,
+        help: field.help ?? '',
+        example: field.example ?? '',
+        choices: field.choices === undefined ? [] : [...field.choices],
+        refLabel: field.ref === undefined ? null : importEntity(field.ref.entity).label,
+      })),
+    })),
+  'importer:modes': () => IMPORT_MODES.map((id) => MODE_INFO[id]),
+  'importer:downloadTemplate': (async () => {
+    const res = await dialog.showSaveDialog({
+      title: 'שמירת תבנית הייבוא',
+      defaultPath: join(app.getPath('documents'), TEMPLATE_FILE_NAME),
+      filters: [{ name: 'Excel', extensions: ['xlsx'] }],
+    });
+    if (res.canceled || !res.filePath) return null;
+    return writeTemplate(res.filePath);
+  }) as Handler,
+  'importer:chooseFile': (async () => {
+    // עזר בדיקות: NEDARIM_IMPORT_FILE=<נתיב> מדלג על הדיאלוג הנייטיב, שאי
+    // אפשר להפעיל אותו מתוך תסריט. מאפשר אימות ויזואלי של כל שלבי האשף
+    // (CLAUDE.md כלל-על 17). אותו דפוס כמו NEDARIM_SCREENSHOT.
+    const forced = process.env['NEDARIM_IMPORT_FILE'];
+    if (forced !== undefined && forced !== '') {
+      if (isBackupFolder(forced)) return { kind: 'backup', path: forced };
+      return { kind: 'file', file: await openImportFile(forced) };
+    }
+
+    const res = await dialog.showOpenDialog({
+      title: 'בחירת קובץ לייבוא',
+      // `openDirectory` כדי שאפשר יהיה לבחור תיקיית גיבוי: הגבאי שמתבקש
+      // "לבחור קובץ" יבחר לפעמים את הגיבוי, וזה הקובץ שהוא מכיר.
+      properties: ['openFile'],
+      filters: [
+        { name: 'קובץ נתונים', extensions: ['xlsx', 'xlsm', 'csv'] },
+        { name: 'Excel', extensions: ['xlsx', 'xlsm'] },
+        { name: 'CSV', extensions: ['csv'] },
+      ],
+    });
+    const path = res.canceled ? undefined : res.filePaths[0];
+    if (path === undefined) return { kind: 'cancelled' };
+    // גיבוי מוחזר כגיבוי ולא כקובץ: שחזור מחזיר גם את הקבלות והקבצים
+    // המצורפים, וייבוא לא.
+    if (isBackupFolder(path)) return { kind: 'backup', path };
+    return { kind: 'file', file: await openImportFile(path) };
+  }) as Handler,
+  'importer:current': () => currentSession(),
+  'importer:updateSheet': ((index: number, patch: Parameters<typeof updateSheet>[1]) =>
+    updateSheet(index, patch)) as Handler,
+  'importer:preflight': () => {
+    const session = currentSession();
+    if (session === null) throw new Error('לא נפתח קובץ ייבוא');
+    return preflight(getDb(), session.sheets);
+  },
+  'importer:validate': ((mode: ImportModeDto) =>
+    validateSession(getDb(), mode, actor().id)) as Handler,
+  'importer:run': ((mode: ImportModeDto) => {
+    const result = runImport(getDb(), mode, actor().id);
+    return {
+      totals: result.totals,
+      sheets: result.sheets.map((sheet) => ({
+        entityLabel: sheet.label,
+        ...sheet.counts,
+        skipped: sheet.skipped,
+      })),
+    };
+  }) as Handler,
+  'importer:cancel': () => {
+    clearSession();
+  },
+
+  // -------------------------------------------------------- אזור מסוכן
+  'danger:deletionScope': () => deletionScope(getDb()),
+  'danger:deleteDatabase': (async (confirmation: string) => {
+    // הבדיקה נעשית גם כאן וגם בשירות. שכפול מכוון: ה-IPC הוא הגבול, ושירות
+    // שסומך על כך שהקורא בדק הוא שירות שאפשר לקרוא לו בטעות בלי לבדוק.
+    if (!confirmationMatches(getDb(), confirmation)) {
+      throw new Error('שם בית הכנסת שהוקלד אינו תואם. המחיקה בוטלה.');
+    }
+    const userDataDir = getUserDataDir();
+    const result = await deleteDatabase(getDb(), {
+      userDataDir,
+      backupDir: defaultBackupDir(userDataDir),
+      confirmation,
+      userId: actor().id,
+      appVersion: app.getVersion(),
+      schemaVersion: getSchemaVersion(),
+    });
+    // `deleteDatabase` סוגר את החיבור. פתיחה מחדש יוצרת בסיס נתונים ריק
+    // עם הסכימה והזרעים – המצב שאשף הייבוא מצפה לו.
+    closeDatabase();
+    initDatabase(userDataDir);
+    return { backupPath: result.backup.path };
   }) as Handler,
 
   // ---------------------------------------------------------- יומן ביקורת

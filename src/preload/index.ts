@@ -164,6 +164,22 @@ const api: NedarimApi = {
     exportAll: () => invoke('backup:exportAll'),
     openFolder: (path) => invoke('backup:openFolder', path),
   },
+  importer: {
+    catalog: () => invoke('importer:catalog'),
+    modes: () => invoke('importer:modes'),
+    downloadTemplate: () => invoke('importer:downloadTemplate'),
+    chooseFile: () => invoke('importer:chooseFile'),
+    current: () => invoke('importer:current'),
+    updateSheet: (index, patch) => invoke('importer:updateSheet', index, patch),
+    preflight: () => invoke('importer:preflight'),
+    validate: (mode) => invoke('importer:validate', mode),
+    run: (mode) => invoke('importer:run', mode),
+    cancel: () => invoke('importer:cancel'),
+  },
+  danger: {
+    deletionScope: () => invoke('danger:deletionScope'),
+    deleteDatabase: (confirmation) => invoke('danger:deleteDatabase', confirmation),
+  },
   audit: {
     list: (filter) => invoke('audit:list', filter),
     entities: () => invoke('audit:entities'),

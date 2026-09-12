@@ -29,6 +29,7 @@ import { BalancePage } from './pages/BalancePage';
 import { ReportsPage } from './pages/ReportsPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { SetupWizard } from './components/SetupWizard';
+import { ImportWizard } from './components/import/ImportWizard';
 import { ReceiptsPage } from './pages/ReceiptsPage';
 import { PendingReceiptsPage } from './pages/PendingReceiptsPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -127,6 +128,12 @@ export default function App() {
    */
   const wizard = useAsync(() => window.api.configuration.wizardState(), [reloadToken]);
   const [wizardOpen, setWizardOpen] = useState(false);
+  /**
+   * F-121 – בהתקנה חדשה אשף הייבוא הוא **המשך** של אשף ההתקנה, ונפתח
+   * מיד אחריו. הגבאי שסיים להגדיר עומד מול מערכת ריקה, וזה הרגע שבו
+   * הנתונים שלו נכנסים – לא תפריט שהוא יחפש בהמשך.
+   */
+  const [importOpen, setImportOpen] = useState(false);
   useEffect(() => {
     if (wizard.data?.completed === false) setWizardOpen(true);
   }, [wizard.data]);
@@ -434,9 +441,23 @@ export default function App() {
             setWizardOpen(false);
             setReloadToken((t) => t + 1);
             setNotice(he.wizard.done);
+            setImportOpen(true);
           }}
         />
       ) : null}
+
+      <ImportWizard
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={() => {
+          setReloadToken((t) => t + 1);
+          setNotice(he.importer.summaryTitle);
+        }}
+        onRestoreRequested={() => {
+          setImportOpen(false);
+          setView({ name: 'settings', tab: 'backup' });
+        }}
+      />
 
     </Box>
   );

@@ -765,6 +765,186 @@ export interface BackupApi {
   openFolder(path: string): Promise<void>;
 }
 
+// ---------------------------------------------------------------- ייבוא נתונים
+
+export type ImportEntityIdDto =
+  | 'payment_method'
+  | 'donation_type'
+  | 'expense_category'
+  | 'occasion'
+  | 'member'
+  | 'vow_charge'
+  | 'vow_payment'
+  | 'donation'
+  | 'expense';
+
+export type ImportModeDto = 'replace' | 'upsert' | 'insert' | 'enrich';
+
+export interface ImportModeInfoDto {
+  mode: ImportModeDto;
+  label: string;
+  description: string;
+  /** אזהרה שמוצגת באדום. `null` = אין סכנה. */
+  danger: string | null;
+  /** דורש מפתח טבעי כדי לזהות רשומה קיימת. */
+  requiresKey: boolean;
+}
+
+export interface ImportFieldDto {
+  label: string;
+  type: 'text' | 'number' | 'money' | 'date' | 'bool' | 'choice';
+  required: boolean;
+  help: string;
+  example: string;
+  choices: string[];
+  /** השדה מצביע על יישות אחרת – מוצג כך במסך המיפוי. */
+  refLabel: string | null;
+}
+
+export interface ImportEntityDto {
+  id: ImportEntityIdDto;
+  label: string;
+  sheet: string;
+  intro: string;
+  fields: ImportFieldDto[];
+  /** יישויות שחייבות להיות במערכת לפניה. */
+  dependsOn: ImportEntityIdDto[];
+}
+
+export interface ImportFieldMappingDto {
+  field: string;
+  column: number | null;
+  quality: 'exact' | 'likely' | 'none';
+}
+
+export interface ImportSheetDto {
+  index: number;
+  sheetName: string;
+  entity: ImportEntityIdDto | null;
+  detectedBy: 'sheet_name' | 'headers' | null;
+  headerRow: number;
+  headers: string[];
+  dataRows: number;
+  mapping: ImportFieldMappingDto[];
+  include: boolean;
+}
+
+export interface ImportFileDto {
+  path: string;
+  fileName: string;
+  kind: 'workbook' | 'csv';
+  sheets: ImportSheetDto[];
+}
+
+/** מה שחוזר מבחירת קובץ: קובץ נתונים, תיקיית גיבוי, או ביטול. */
+export type ImportChoiceDto =
+  | { kind: 'file'; file: ImportFileDto }
+  | { kind: 'backup'; path: string }
+  | { kind: 'cancelled' };
+
+export interface ImportPreflightDto {
+  problems: Array<{
+    sheetName: string;
+    entityLabel: string;
+    missingRequired: string[];
+    ignoredColumns: string[];
+  }>;
+  missingDependencies: Array<{ entityLabel: string; needsLabel: string }>;
+}
+
+export interface ImportIssueDto {
+  sheet: string;
+  column: string;
+  message: string;
+  severity: 'error' | 'warning';
+  count: number;
+  sampleRows: number[];
+}
+
+export interface ImportValidationDto {
+  sheets: Array<{
+    entity: ImportEntityIdDto;
+    entityLabel: string;
+    sheetName: string;
+    rows: number;
+    rejected: number;
+    skippedExample: number;
+  }>;
+  totalRows: number;
+  totalRejected: number;
+  errors: number;
+  warnings: number;
+  issues: ImportIssueDto[];
+  blocks: Array<{ entityLabel: string; message: string }>;
+  canImport: boolean;
+  preview: Array<{ entityLabel: string; insert: number; update: number; enrich: number; skip: number }>;
+}
+
+export interface ImportResultDto {
+  sheets: Array<{
+    entityLabel: string;
+    insert: number;
+    update: number;
+    enrich: number;
+    skip: number;
+    skipped: Array<{ row: number; reason: string }>;
+  }>;
+  totals: { insert: number; update: number; enrich: number; skip: number };
+}
+
+export interface ImportApi {
+  /** F-120 – הקטלוג, למסך המיפוי ולבחירת יישות ידנית. */
+  catalog(): Promise<ImportEntityDto[]>;
+  /** ארבעת מצבי הייבוא והאזהרות שלהם. */
+  modes(): Promise<ImportModeInfoDto[]>;
+  /** F-122 – הורדת תבנית האקסל. מחזיר את הנתיב שנשמר, או null בביטול. */
+  downloadTemplate(): Promise<string | null>;
+  /** F-123 – בחירת קובץ. מזהה גם תיקיית גיבוי ומפנה לשחזור. */
+  chooseFile(): Promise<ImportChoiceDto>;
+  /** הקובץ שנפתח, אם יש. */
+  current(): Promise<ImportFileDto | null>;
+  /** F-125 – שינוי מיפוי, יישות או הכללה של גיליון. */
+  updateSheet(
+    index: number,
+    patch: {
+      entity?: ImportEntityIdDto | null;
+      include?: boolean;
+      mapping?: ImportFieldMappingDto[];
+      headerRow?: number;
+    },
+  ): Promise<ImportFileDto>;
+  /** בדיקת המיפוי לפני האימות. */
+  preflight(): Promise<ImportPreflightDto>;
+  /** F-124 – אימות מלא, כולל תצוגה מקדימה מהרצה יבשה. */
+  validate(mode: ImportModeDto): Promise<ImportValidationDto>;
+  /** F-126 – הייבוא עצמו. */
+  run(mode: ImportModeDto): Promise<ImportResultDto>;
+  /** סגירת האשף. */
+  cancel(): Promise<void>;
+}
+
+// -------------------------------------------------------------- אזור מסוכן
+
+export interface DeletionScopeDto {
+  members: number;
+  charges: number;
+  payments: number;
+  donations: number;
+  expenses: number;
+  receipts: number;
+  synagogueName: string;
+}
+
+export interface DangerApi {
+  /** F-130 – מה עומד להימחק. מוצג לפני האישור. */
+  deletionScope(): Promise<DeletionScopeDto>;
+  /**
+   * מוחק את בסיס הנתונים. גיבוי נוצר תמיד לפני המחיקה, והנתיב שלו חוזר.
+   * `confirmation` חייב להיות שם בית הכנסת.
+   */
+  deleteDatabase(confirmation: string): Promise<{ backupPath: string }>;
+}
+
 // ---------------------------------------------------------------- יומן ביקורת
 
 export interface AuditEntryDto {
@@ -1155,6 +1335,8 @@ export interface NedarimApi {
   dashboard: DashboardApi;
   auth: AuthApi;
   backup: BackupApi;
+  importer: ImportApi;
+  danger: DangerApi;
   audit: AuditApi;
   templates: TemplatesApi;
   notifications: NotificationsApi;
@@ -1286,6 +1468,20 @@ export const IPC_CHANNELS = {
   'backup:reminder': true,
   'backup:exportAll': true,
   'backup:openFolder': true,
+
+  'importer:catalog': true,
+  'importer:modes': true,
+  'importer:downloadTemplate': true,
+  'importer:chooseFile': true,
+  'importer:current': true,
+  'importer:updateSheet': true,
+  'importer:preflight': true,
+  'importer:validate': true,
+  'importer:run': true,
+  'importer:cancel': true,
+
+  'danger:deletionScope': true,
+  'danger:deleteDatabase': true,
 
   'audit:list': true,
   'audit:entities': true,

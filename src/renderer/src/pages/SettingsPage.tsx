@@ -32,6 +32,7 @@ import type {
   SettingSpecDto,
 } from '@shared/api';
 import { BackupTab } from './BackupTab';
+import { DataTab } from './DataTab';
 import { UsersTab } from './UsersTab';
 import { useAsync } from '../hooks/useAsync';
 import { he } from '../i18n/he';
@@ -70,7 +71,7 @@ const LOOKUP_TABS: ReadonlyArray<{ id: LookupTableDto; label: string }> = [
  * השדות נבנים מתוך `specs` שמגיע מה-main, ולא מקוד קשיח כאן – הוספת הגדרה
  * חדשה בשרת מופיעה במסך מאליה (CLAUDE.md כלל 12).
  */
-type SettingsTab = 'settings' | 'counters' | 'lookups' | 'users' | 'backup' | 'about';
+type SettingsTab = 'settings' | 'counters' | 'lookups' | 'users' | 'backup' | 'data' | 'about';
 
 const SETTINGS_TABS: readonly SettingsTab[] = [
   'settings',
@@ -78,6 +79,7 @@ const SETTINGS_TABS: readonly SettingsTab[] = [
   'lookups',
   'users',
   'backup',
+  'data',
 ];
 
 export function SettingsPage({ onNotify, onChanged, session, initialTab }: SettingsPageProps) {
@@ -169,6 +171,7 @@ export function SettingsPage({ onNotify, onChanged, session, initialTab }: Setti
         <Tab value="lookups" label={he.settings.tabs.lookups} />
         <Tab value="users" label={he.auth.users} />
         <Tab value="backup" label={he.backup.title} />
+        <Tab value="data" label={he.settings.tabs.data} />
         <Tab value="about" label={he.about.tab} />
       </Tabs>
 
@@ -214,6 +217,17 @@ export function SettingsPage({ onNotify, onChanged, session, initialTab }: Setti
         {tab === 'users' ? <UsersTab session={session} onNotify={onNotify} /> : null}
 
         {tab === 'backup' ? <BackupTab onNotify={onNotify} /> : null}
+
+        {tab === 'data' ? (
+          <DataTab
+            onNotify={onNotify}
+            onChanged={() => {
+              config.reload();
+              onChanged();
+            }}
+            onGoToBackups={() => setTab('backup')}
+          />
+        ) : null}
 
         {tab === 'about' ? <AboutTab onNotify={onNotify} /> : null}
       </Box>
