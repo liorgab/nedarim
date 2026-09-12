@@ -1,0 +1,26 @@
+node_modules/
+out/
+dist/
+release/
+*.db
+*.db-shm
+*.db-wal
+# נתוני אמת – לעולם לא עולים לריפו הציבורי.
+# חוברת האקסל המקורית מכילה 90 חברים אמיתיים עם טלפונים והיסטוריה כספית.
+data/legacy/
+data/backups/
+data/import-report.md
+data/import-cache/
+.eslintcache
+coverage/
+*.local
+.DS_Store
+Thumbs.db
+
+# תוצרי בנייה מקומיים
+*.tsbuildinfo
+build/icon.ico
+build/icon.png
+
+# תוצרי שחרור
+RELEASE_NOTES.md

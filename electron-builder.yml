@@ -1,0 +1,60 @@
+# אריזת ההתקנה ל-Windows (NSIS).
+#
+# ההתקנה היא Standalone לחלוטין: אין שרת, אין חשבון, אין רשת. הגבאי מריץ
+# קובץ אחד, לוחץ "הבא", והיישום נפתח עם בסיס נתונים ריק שהוא מגדיר לעצמו
+# במסך ההגדרות (CLAUDE.md כלל 12-13).
+appId: org.nedarim.app
+productName: נדרים
+copyright: GPL-3.0-or-later · NEDARIM contributors
+
+directories:
+  output: dist
+  buildResources: build
+
+files:
+  - out/**
+  - package.json
+  - '!**/*.map'
+  # קובצי הרישוי נארזים עם היישום – GPL דורש שהתנאים ילוו את ההפצה.
+  - LICENSE
+  - THIRD-PARTY-NOTICES.md
+  - PRIVACY.md
+  - CHANGELOG.md
+
+# better-sqlite3 הוא מודול נייטיב ולכן חייב להישאר מחוץ ל-asar,
+# אחרת Node לא יוכל לטעון את ה-.node שבתוכו.
+asarUnpack:
+  - '**/node_modules/better-sqlite3/**'
+
+# אין לקמפל מחדש את המודולים הנייטיביים בזמן האריזה.
+# better-sqlite3 v13 מגיע עם prebuild של N-API 10, שהוא ABI-יציב וטוב גם
+# ל-Electron 38 – ולכן אין צורך ב-Visual Studio אצל מי שבונה את ההתקנה.
+# הפעלת rebuild כאן הייתה מכשילה את הבנייה בדיוק בגלל זה.
+npmRebuild: false
+buildDependenciesFromSource: false
+
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+  # אין חתימת קוד: הפרויקט חופשי ואין תעודה. Windows SmartScreen יציג
+  # אזהרה בהרצה הראשונה – מתועד ב-docs/USER-GUIDE.md.
+  signAndEditExecutable: true
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: נדרים
+  installerLanguages:
+    - he_IL
+    - en_US
+  language: '1037' # עברית
+  artifactName: nedarim-setup-${version}.${ext}
+  # הסרת ההתקנה לא נוגעת ב-%APPDATA%\nedarim: הנתונים והגיבויים של בית
+  # הכנסת שורדים שדרוג והסרה. מחיקה מלאה היא פעולה ידנית ומודעת.
+  deleteAppDataOnUninstall: false

@@ -1,0 +1,47 @@
+# אריזה ופרסום גרסה.
+#
+# רץ כשדוחפים תגית `v*` (למשל `v0.2.0`), בונה את קובץ ההתקנה ומפרסם
+# אותו כ-Release ב-GitHub. זה בדיוק מה שכפתור "בדוק אם יש עדכון"
+# מחפש: שחרור עם קובץ `.exe` מצורף.
+name: שחרור גרסה
+
+on:
+  push:
+    tags: ['v*']
+
+# נדרש כדי ליצור Release. בלי זה הצעד האחרון נכשל ב-403.
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # לא מפרסמים גרסה שלא עברה בדיקות.
+      - run: npm run check
+      - run: npm test
+
+      - name: אריזה
+        run: npm run build
+
+      - name: פרסום Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # מה שנכתב ב-CHANGELOG תחת הגרסה הזו הוא מה שהמשתמש יראה
+          # בכפתור העדכון. שווה לכתוב אותו בעברית ולמשתמש, לא למפתח.
+          body_path: RELEASE_NOTES.md
+          files: |
+            dist/*.exe
+            dist/*.exe.blockmap
+            dist/latest.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

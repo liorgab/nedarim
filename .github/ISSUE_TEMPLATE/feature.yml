@@ -1,0 +1,23 @@
+name: הצעה לשיפור
+description: רעיון ליכולת חדשה
+labels: [שיפור]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: איזו בעיה זה פותר
+      description: תאר את הצורך, לא את הפתרון. זה עוזר למצוא פתרון טוב יותר.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: מה הצעתך
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: התאמה לפרויקט
+      options:
+        - label: ההצעה אינה דורשת חיבור לאינטרנט או שליחת נתונים החוצה
+        - label: ההצעה מתאימה לכל בית כנסת ולא רק לשלי

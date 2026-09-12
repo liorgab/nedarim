@@ -1,0 +1,1628 @@
+olevba 0.60.2 on Python 3.11.15 - http://decalage.info/python/oletools
+===============================================================================
+FILE: src.xlsm
+Type: OpenXML
+WARNING  For now, VBA stomping cannot be detected for files in memory
+-------------------------------------------------------------------------------
+VBA MACRO Module1.bas 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/Module1'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+Sub NewMember()
+
+AddNewMembar.Show
+
+End Sub
+
+
+Sub BetKnesetMemberSheet()
+Attribute BetKnesetMemberSheet.VB_ProcData.VB_Invoke_Func = " \n14"
+
+
+Sheets("חברי בית הכנסת").Visible = True
+Sheets("חברי בית הכנסת").Select
+Range("A1").Select
+
+End Sub
+Sub SikumNedarimSheet()
+
+Sheets("סיכום נדרים").Visible = True
+Sheets("סיכום נדרים").Select
+Range("A1").Select
+
+End Sub
+
+Sub Kartisiut()
+
+Dim LastCol As Integer
+
+Sheets("כרטיסיות").Visible = True
+Sheets("כרטיסיות").Select
+With Sheets("כרטיסיות")
+    LastCol = .Cells(1, .Columns.Count).End(xlToLeft).Column
+End With
+Columns(LastCol + 6).Select
+
+End Sub
+Sub Home()
+Attribute Home.VB_ProcData.VB_Invoke_Func = " \n14"
+
+ActiveWindow.SelectedSheets.Visible = False
+Sheets("מסך ראשי").Select
+
+End Sub
+
+Sub HotzaotSheet()
+
+Sheets("הוצאות").Visible = True
+Sheets("הוצאות").Select
+Range("A1").Select
+
+End Sub
+
+Sub TrumutSheet()
+
+Sheets("תרומות").Visible = True
+Sheets("תרומות").Select
+Range("A1").Select
+
+End Sub
+
+Sub MaazanSheet()
+
+Dim Truma_month, Truma_year As String
+Dim Lrow, i, j, x, iTruma_month, iTruma_year As Integer
+Dim SumTruma(37), SumNeder(37), SumHotzaa(37) As Long
+
+'-------*****--------
+' איפוס מאזן
+For i = 1 To 25
+    Sheets("מאזן שנתי").Range("B" & i + 2).Value = 0
+    Sheets("מאזן שנתי").Range("C" & i + 2).Value = 0
+    Sheets("מאזן שנתי").Range("D" & i + 2).Value = 0
+    Sheets("מאזן שנתי").Range("E" & i + 2).Value = 0
+    Sheets("מאזן שנתי").Range("F" & i + 2).Value = 0
+Next i
+
+
+
+'-------*****--------
+' Calculate Trumut
+Sheets("תרומות").Visible = True
+Sheets("תרומות").Select
+
+'איפוס ערכים
+For x = 1 To 37
+    SumTruma(x) = 0
+Next x
+
+'מציאת שורה אחרונה
+Lrow = Cells(Rows.Count, 1).End(xlUp).Row
+
+If Lrow = 1 Then
+    GoTo end_Truma
+End If
+
+
+' בדיקת החודש והשנה
+For i = 2 To Lrow
+Truma_month = Mid(Range("B" & i), 4, 2)
+Truma_year = Right(Range("B" & i), 4)
+iTruma_month = CInt(Truma_month)
+iTruma_year = CInt(Truma_year)
+
+'חישוב סהכ תרומות לפי חודשים
+If iTruma_year = 2023 Then
+    Select Case iTruma_month
+        Case Is = 9
+            SumTruma(1) = SumTruma(1) + Range("F" & i).Value
+        
+        Case Is = 10
+            SumTruma(2) = SumTruma(2) + Range("F" & i).Value
+        
+        Case Is = 11
+            SumTruma(3) = SumTruma(3) + Range("F" & i).Value
+        
+        Case Is = 12
+            SumTruma(4) = SumTruma(4) + Range("F" & i).Value
+    End Select
+End If
+        
+If iTruma_year = 2024 Then
+    Select Case iTruma_month
+        Case Is = 1
+            SumTruma(5) = SumTruma(5) + Range("F" & i).Value
+        
+        Case Is = 2
+            SumTruma(6) = SumTruma(6) + Range("F" & i).Value
+        
+        Case Is = 3
+            SumTruma(7) = SumTruma(7) + Range("F" & i).Value
+        
+        Case Is = 4
+            SumTruma(8) = SumTruma(8) + Range("F" & i).Value
+        
+        Case Is = 5
+            SumTruma(9) = SumTruma(9) + Range("F" & i).Value
+        
+        Case Is = 6
+            SumTruma(10) = SumTruma(10) + Range("F" & i).Value
+        
+        Case Is = 7
+            SumTruma(11) = SumTruma(11) + Range("F" & i).Value
+        
+        Case Is = 8
+            SumTruma(12) = SumTruma(12) + Range("F" & i).Value
+            
+        Case Is = 9
+            SumTruma(13) = SumTruma(13) + Range("F" & i).Value
+            
+        Case Is = 10
+            SumTruma(14) = SumTruma(14) + Range("F" & i).Value
+            
+        Case Is = 11
+            SumTruma(15) = SumTruma(15) + Range("F" & i).Value
+            
+        Case Is = 12
+            SumTruma(16) = SumTruma(16) + Range("F" & i).Value
+    End Select
+End If
+
+If iTruma_year = 2025 Then
+    Select Case iTruma_month
+    Case Is = 1
+        SumTruma(17) = SumTruma(17) + Range("F" & i).Value
+        
+    Case Is = 2
+        SumTruma(18) = SumTruma(18) + Range("F" & i).Value
+        
+    Case Is = 3
+        SumTruma(19) = SumTruma(19) + Range("F" & i).Value
+        
+    Case Is = 4
+        SumTruma(20) = SumTruma(20) + Range("F" & i).Value
+        
+    Case Is = 5
+        SumTruma(21) = SumTruma(21) + Range("F" & i).Value
+        
+    Case Is = 6
+        SumTruma(22) = SumTruma(22) + Range("F" & i).Value
+        
+    Case Is = 7
+        SumTruma(23) = SumTruma(23) + Range("F" & i).Value
+        
+    Case Is = 8
+        SumTruma(24) = SumTruma(24) + Range("F" & i).Value
+        
+    Case Is = 9
+        SumTruma(25) = SumTruma(25) + Range("F" & i).Value
+        
+    Case Is = 10
+        SumTruma(26) = SumTruma(26) + Range("F" & i).Value
+            
+    Case Is = 11
+        SumTruma(27) = SumTruma(27) + Range("F" & i).Value
+            
+    Case Is = 12
+        SumTruma(28) = SumTruma(28) + Range("F" & i).Value
+    End Select
+End If
+If iTruma_year = 2026 Then
+    Select Case iTruma_month
+    Case Is = 1
+        SumTruma(29) = SumTruma(29) + Range("F" & i).Value
+        
+    Case Is = 2
+        SumTruma(30) = SumTruma(30) + Range("F" & i).Value
+        
+    Case Is = 3
+        SumTruma(31) = SumTruma(31) + Range("F" & i).Value
+        
+    Case Is = 4
+        SumTruma(32) = SumTruma(32) + Range("F" & i).Value
+        
+    Case Is = 5
+        SumTruma(33) = SumTruma(33) + Range("F" & i).Value
+        
+    Case Is = 6
+        SumTruma(34) = SumTruma(34) + Range("F" & i).Value
+        
+    Case Is = 7
+        SumTruma(35) = SumTruma(35) + Range("F" & i).Value
+        
+    Case Is = 8
+        SumTruma(36) = SumTruma(36) + Range("F" & i).Value
+        
+    Case Is = 9
+        SumTruma(37) = SumTruma(37) + Range("F" & i).Value
+    End Select
+End If
+Next i
+
+Sheets("תרומות").Visible = False
+Sheets("מאזן שנתי").Visible = True
+Sheets("מאזן שנתי").Select
+
+For i = 1 To 37
+    Sheets("מאזן שנתי").Range("B" & i + 2).Value = SumTruma(i)
+    Sheets("מאזן שנתי").Range("B" & i + 2).NumberFormat = "#,##0"
+Next i
+
+end_Truma:
+
+'-------*****--------
+' Calculate Nedarim
+
+'חישוב מספר חברי בית כנסת
+Sheets("חברי בית הכנסת").Visible = True
+Sheets("חברי בית הכנסת").Select
+
+Lrow = Cells(Rows.Count, 1).End(xlUp).Row
+Lrow = Lrow - 1
+Sheets("חברי בית הכנסת").Visible = False
+
+
+'-------*****--------
+Sheets("כרטיסיות").Visible = True
+Sheets("כרטיסיות").Select
+
+'איפוס ערכים
+For x = 1 To 37
+    SumNeder(x) = 0
+Next x
+
+
+'לופ חישוב סכומי נדרים
+For i = 1 To Lrow
+    For j = 6 To 201
+        Truma_month = Mid(Sheets("כרטיסיות").Cells(j, (10 * (i - 1)) + 5), 4, 2)
+        Truma_year = Right(Sheets("כרטיסיות").Cells(j, (10 * (i - 1)) + 5), 4)
+        If Truma_month = "" Then
+            Truma_month = 0
+        End If
+        If Truma_year = "" Then
+            Truma_year = 0
+        End If
+        iTruma_month = CInt(Truma_month)
+        iTruma_year = CInt(Truma_year)
+           
+           If iTruma_year = 2023 Then
+                Select Case iTruma_month
+                    Case Is = 9
+                        SumNeder(1) = SumNeder(1) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 10
+                        SumNeder(2) = SumNeder(2) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 11
+                        SumNeder(3) = SumNeder(3) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 12
+                        SumNeder(4) = SumNeder(4) + Cells(j, (10 * (i - 1)) + 6).Value
+                    End Select
+            End If
+                
+            If iTruma_year = 2024 Then
+                Select Case iTruma_month
+                    Case Is = 1
+                        SumNeder(5) = SumNeder(5) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 2
+                        SumNeder(6) = SumNeder(6) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 3
+                        SumNeder(7) = SumNeder(7) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 4
+                        SumNeder(8) = SumNeder(8) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 5
+                        SumNeder(9) = SumNeder(9) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 6
+                        SumNeder(10) = SumNeder(10) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 7
+                        SumNeder(11) = SumNeder(11) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 8
+                        SumNeder(12) = SumNeder(12) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 9
+                        SumNeder(13) = SumNeder(13) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 10
+                        SumNeder(14) = SumNeder(14) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 11
+                        SumNeder(15) = SumNeder(15) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 12
+                        SumNeder(16) = SumNeder(16) + Cells(j, (10 * (i - 1)) + 6).Value
+                End Select
+            End If
+            
+            If iTruma_year = 2025 Then
+                Select Case iTruma_month
+                    Case Is = 1
+                        SumNeder(17) = SumNeder(17) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 2
+                        SumNeder(18) = SumNeder(18) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 3
+                        SumNeder(19) = SumNeder(19) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 4
+                        SumNeder(20) = SumNeder(20) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 5
+                        SumNeder(21) = SumNeder(21) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 6
+                        SumNeder(22) = SumNeder(22) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 7
+                        SumNeder(23) = SumNeder(23) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 8
+                        SumNeder(24) = SumNeder(24) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 9
+                        SumNeder(25) = SumNeder(25) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 10
+                        SumNeder(26) = SumNeder(26) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 11
+                        SumNeder(27) = SumNeder(27) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 12
+                        SumNeder(28) = SumNeder(28) + Cells(j, (10 * (i - 1)) + 6).Value
+                    End Select
+            End If
+            
+            If iTruma_year = 2026 Then
+                Select Case iTruma_month
+                    Case Is = 1
+                        SumNeder(29) = SumNeder(29) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 2
+                        SumNeder(30) = SumNeder(30) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 3
+                        SumNeder(31) = SumNeder(31) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 4
+                        SumNeder(32) = SumNeder(32) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 5
+                        SumNeder(33) = SumNeder(33) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 6
+                        SumNeder(34) = SumNeder(34) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 7
+                        SumNeder(35) = SumNeder(35) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 8
+                        SumNeder(36) = SumNeder(36) + Cells(j, (10 * (i - 1)) + 6).Value
+                    Case Is = 9
+                        SumNeder(37) = SumNeder(37) + Cells(j, (10 * (i - 1)) + 6).Value
+                    End Select
+            End If
+    Next j
+Next i
+
+Sheets("כרטיסיות").Visible = False
+Sheets("מאזן שנתי").Visible = True
+Sheets("מאזן שנתי").Select
+
+
+For i = 1 To 37
+    Sheets("מאזן שנתי").Range("C" & i + 2).Value = SumNeder(i)
+    Sheets("מאזן שנתי").Range("C" & i + 2).NumberFormat = "#,##0"
+Next i
+
+
+'-------*****--------
+' Calculate Hotzaot
+
+Sheets("הוצאות").Visible = True
+Sheets("הוצאות").Select
+
+'איפוס ערכים
+For x = 1 To 37
+    SumHotzaa(x) = 0
+Next x
+
+'מציאת שורה אחרונה
+Lrow = Cells(Rows.Count, 1).End(xlUp).Row
+
+'יציאה מחישוב הוצאות כאשר אין הוצאות
+If Lrow = 1 Then
+    GoTo end_Hotzaot
+End If
+
+'בדיקת החודש
+For i = 2 To Lrow
+    Truma_month = Mid(Range("B" & i), 4, 2)
+    Truma_year = Right(Range("B" & i), 4)
+    iTruma_month = CInt(Truma_month)
+    iTruma_year = CInt(Truma_year)
+
+'חישוב סהכ הוצאות לפי חודשים
+    If iTruma_year = 2023 Then
+        Select Case iTruma_month
+            Case Is = 9
+                SumHotzaa(1) = SumHotzaa(1) + Range("C" & i).Value
+            Case Is = 10
+                SumHotzaa(2) = SumHotzaa(2) + Range("C" & i).Value
+            Case Is = 11
+                SumHotzaa(3) = SumHotzaa(3) + Range("C" & i).Value
+            Case Is = 12
+                SumHotzaa(4) = SumHotzaa(4) + Range("C" & i).Value
+        End Select
+    End If
+    
+    If iTruma_year = 2024 Then
+        Select Case iTruma_month
+            Case Is = 1
+                SumHotzaa(5) = SumHotzaa(5) + Range("C" & i).Value
+            Case Is = 2
+                SumHotzaa(6) = SumHotzaa(6) + Range("C" & i).Value
+            Case Is = 3
+                SumHotzaa(7) = SumHotzaa(7) + Range("C" & i).Value
+            Case Is = 4
+                SumHotzaa(8) = SumHotzaa(8) + Range("C" & i).Value
+            Case Is = 5
+                SumHotzaa(9) = SumHotzaa(9) + Range("C" & i).Value
+            Case Is = 6
+                SumHotzaa(10) = SumHotzaa(10) + Range("C" & i).Value
+            Case Is = 7
+                SumHotzaa(11) = SumHotzaa(11) + Range("C" & i).Value
+            Case Is = 8
+                SumHotzaa(12) = SumHotzaa(12) + Range("C" & i).Value
+            Case Is = 9
+                SumHotzaa(13) = SumHotzaa(13) + Range("C" & i).Value
+            Case Is = 10
+                SumHotzaa(14) = SumHotzaa(14) + Range("C" & i).Value
+            Case Is = 11
+                SumHotzaa(15) = SumHotzaa(15) + Range("C" & i).Value
+            Case Is = 12
+                SumHotzaa(16) = SumHotzaa(16) + Range("C" & i).Value
+        End Select
+    End If
+    
+    If iTruma_year = 2025 Then
+        Select Case iTruma_month
+            Case Is = 1
+                SumHotzaa(17) = SumHotzaa(17) + Range("C" & i).Value
+            Case Is = 2
+                SumHotzaa(18) = SumHotzaa(18) + Range("C" & i).Value
+            Case Is = 3
+                SumHotzaa(19) = SumHotzaa(19) + Range("C" & i).Value
+            Case Is = 4
+                SumHotzaa(20) = SumHotzaa(20) + Range("C" & i).Value
+            Case Is = 5
+                SumHotzaa(21) = SumHotzaa(21) + Range("C" & i).Value
+            Case Is = 6
+                SumHotzaa(22) = SumHotzaa(22) + Range("C" & i).Value
+            Case Is = 7
+                SumHotzaa(23) = SumHotzaa(23) + Range("C" & i).Value
+            Case Is = 8
+                SumHotzaa(24) = SumHotzaa(24) + Range("C" & i).Value
+            Case Is = 9
+                SumHotzaa(25) = SumHotzaa(25) + Range("C" & i).Value
+            Case Is = 10
+                SumHotzaa(26) = SumHotzaa(26) + Range("C" & i).Value
+            Case Is = 11
+                SumHotzaa(27) = SumHotzaa(27) + Range("C" & i).Value
+            Case Is = 12
+                SumHotzaa(28) = SumHotzaa(28) + Range("C" & i).Value
+        End Select
+    End If
+            
+    If iTruma_year = 2026 Then
+        Select Case iTruma_month
+            Case Is = 1
+                SumHotzaa(29) = SumHotzaa(29) + Range("C" & i).Value
+            Case Is = 2
+                SumHotzaa(30) = SumHotzaa(30) + Range("C" & i).Value
+            Case Is = 3
+                SumHotzaa(31) = SumHotzaa(31) + Range("C" & i).Value
+            Case Is = 4
+                SumHotzaa(32) = SumHotzaa(32) + Range("C" & i).Value
+            Case Is = 5
+                SumHotzaa(33) = SumHotzaa(33) + Range("C" & i).Value
+            Case Is = 6
+                SumHotzaa(34) = SumHotzaa(34) + Range("C" & i).Value
+            Case Is = 7
+                SumHotzaa(35) = SumHotzaa(35) + Range("C" & i).Value
+            Case Is = 8
+                SumHotzaa(36) = SumHotzaa(36) + Range("C" & i).Value
+            Case Is = 9
+                SumHotzaa(37) = SumHotzaa(37) + Range("C" & i).Value
+        End Select
+    End If
+Next i
+
+end_Hotzaot:
+
+Sheets("הוצאות").Visible = False
+Sheets("מאזן שנתי").Visible = True
+Sheets("מאזן שנתי").Select
+
+For i = 1 To 37
+    Sheets("מאזן שנתי").Range("E" & i + 2).Value = SumHotzaa(i)
+    Sheets("מאזן שנתי").Range("E" & i + 2).NumberFormat = "#,##0"
+Next i
+
+'-------*****--------
+' סיכום מאזן
+
+For i = 1 To 37
+    Sheets("מאזן שנתי").Range("D" & i + 2).Value = Range("B" & i + 2) + Range("C" & i + 2)
+    Sheets("מאזן שנתי").Range("F" & i + 2).Value = Range("D" & i + 2) - Range("E" & i + 2)
+    Sheets("מאזן שנתי").Range("D" & i + 2).NumberFormat = "#,##0"
+    Sheets("מאזן שנתי").Range("F" & i + 2).NumberFormat = "#,##0"
+Next i
+
+'-------*****--------
+' עיצוב מאזן
+
+    Range("A3:F39").Select
+    Selection.Borders(xlDiagonalDown).LineStyle = xlNone
+    Selection.Borders(xlDiagonalUp).LineStyle = xlNone
+    With Selection.Borders(xlEdgeLeft)
+        .LineStyle = xlContinuous
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlEdgeTop)
+        .LineStyle = xlContinuous
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlEdgeBottom)
+        .LineStyle = xlContinuous
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlEdgeRight)
+        .LineStyle = xlContinuous
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlInsideVertical)
+        .LineStyle = xlContinuous
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlInsideHorizontal)
+        .LineStyle = xlContinuous
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    Range("D40").Select
+    ActiveCell.FormulaR1C1 = ""
+    Application.CutCopyMode = False
+    ActiveCell.FormulaR1C1 = "=SUM(R[-37]C:R[-1]C)"
+    Range("D40").Select
+    Selection.Font.Bold = True
+    Selection.AutoFill Destination:=Range("D40:F40"), Type:=xlFillDefault
+    Range("D40:F40").Select
+    With Selection.Interior
+        .Pattern = xlSolid
+        .PatternColorIndex = xlAutomatic
+        .Color = 65535
+        .TintAndShade = 0
+        .PatternTintAndShade = 0
+    End With
+    With Selection.Interior
+        .Pattern = xlSolid
+        .PatternColorIndex = xlAutomatic
+        .ThemeColor = xlThemeColorDark1
+        .TintAndShade = -0.149998474074526
+        .PatternTintAndShade = 0
+    End With
+    
+    
+    Range("A40").Select
+
+End Sub
+
+
+Sub AddNewNeder()
+
+Dim i As Integer
+Dim s As Date
+'-------*****--------
+' Form Initialize
+
+NederInput.TextBox1.Value = ""
+NederInput.TextBox2.Value = ""
+NederInput.TextBox3.Value = ""
+NederInput.TextBox5.Value = ""
+NederInput.TextBox7.Value = ""
+
+
+
+'---------********----------
+'הזנת נתונים לטופס
+i = ActiveCell.Row
+member = Range("A" & i).Value
+
+
+
+s = Date
+NederInput.TextBox1.Value = Sheets("חברי בית הכנסת").Range("A" & i).Value
+NederInput.TextBox2.Value = Sheets("חברי בית הכנסת").Range("B" & i).Value
+NederInput.TextBox3.Value = Sheets("חברי בית הכנסת").Range("C" & i).Value
+NederInput.TextBox6.Value = s
+NederInput.TextBox6.Text = Format(NederInput.TextBox6.Text, "dd/mm/yyyy;@")
+
+ 
+
+NederInput.Show
+
+End Sub
+
+
+Sub AddNewTruma()
+
+'-------*****--------
+' Form Initialize
+
+TrumaInput.TextBox1.Value = ""
+TrumaInput.TextBox2.Value = ""
+TrumaInput.TextBox4.Value = Date
+TrumaInput.TextBox4.Value = Format(TrumaInput.TextBox4.Value, "dd/mm/yyyy;@")
+TrumaInput.ComboBox1.List = Array("מזומן", "המחאה", "הוראת קבע", "כרטיס אשראי")
+TrumaInput.ComboBox2.List = Array("בדק בית", "ברכת השנה")
+TrumaInput.TextBox3.Value = ""
+
+TrumaInput.Show
+
+End Sub
+
+
+Sub NewNederPayment()
+
+Dim i, member As Integer
+Dim s As Date
+'-------*****--------
+' Form Initialize
+
+
+
+NederPayment.TextBox2.Value = ""
+NederPayment.TextBox3.Value = ""
+NederPayment.TextBox4.Value = ""
+NederPayment.TextBox6.Value = ""
+NederPayment.ComboBox1.List = Array("מזומן", "המחאה", "הוראת קבע", "כרטיס אשראי")
+
+'-------*****--------
+'Find the payment person member
+
+i = ActiveCell.Row
+member = Range("A" & i).Value
+
+'---------********----------
+'הזנת נתונים לטופס
+s = Date
+NederPayment.TextBox5.Value = s
+
+'NederPayment.TextBox5.Value = Date
+NederPayment.TextBox5.Value = Format(NederPayment.TextBox5.Value, "dd/mm/yyyy;@")
+
+NederPayment.TextBox2.Value = member
+NederPayment.TextBox3.Value = Sheets("סיכום נדרים").Range("B" & i).Value & _
+    " " & Sheets("סיכום נדרים").Range("C" & i).Value
+NederPayment.TextBox6.Value = Sheets("סיכום נדרים").Range("F" & i).Value
+
+
+NederPayment.Show
+
+End Sub
+Sub AddNewHotzaa()
+Dim i, HotzaaNum As Integer
+
+'-------*****--------
+' Form Initialize
+
+NewHotzaa.TextBox1.Value = ""
+NewHotzaa.TextBox2.Value = ""
+NewHotzaa.TextBox3.Value = ""
+NewHotzaa.TextBox4.Value = ""
+NewHotzaa.TextBox5.Value = ""
+
+'-------*****--------
+'Find the Hotzaa number
+
+
+
+Sheets("הוצאות").Visible = True
+Sheets("הוצאות").Select
+
+max = Application.WorksheetFunction.max(Sheets("הוצאות").Columns("A"))
+HotzaaNum = max + 1
+
+For Each Cell In Sheets("הוצאות").Columns(1).Cells
+    If Len(Cell) = 0 Then Cell.Select: Exit For
+Next Cell
+
+'ActiveCell.Value = HotzaaNum
+Sheets("הוצאות").Select
+'Sheets("הוצאות").Visible = False
+
+
+i = ActiveCell.Row
+
+'---------********----------
+'הזנת נתונים לטופס
+NewHotzaa.TextBox1.Value = HotzaaNum
+NewHotzaa.TextBox2.Value = Date
+NewHotzaa.TextBox2.Value = Format(NewHotzaa.TextBox2.Value, "dd/mm/yyyy;@")
+
+NewHotzaa.Show
+End Sub
+
+Sub PrintKabala()
+
+Dim i, col As Integer
+Dim aa, FirstName, LastName, KabalaName, PaymentType As String
+'Dim PaymentDate As Date
+Dim max As Double
+Dim KabalaAmount As Long
+kabalaNum = ""
+
+'-------*****--------
+'Find the payment row
+With Sheets("כרטיסיות")
+    i = ActiveCell.Row
+    col = ActiveCell.Column
+End With
+
+'-------*****--------
+'Find Kabala KabalaName
+'Find Kabala KabalaAmount
+'Find Kabala PaymentDate
+
+aa = Sheets("כרטיסיות").Cells(5, col).Value
+Select Case aa
+            Case "תאריך תשלום"
+                FirstName = Sheets("כרטיסיות").Cells(2, col - 1).Value
+                LastName = Sheets("כרטיסיות").Cells(2, col + 3).Value
+                KabalaAmount = Sheets("כרטיסיות").Cells(i, col + 1).Value
+                PaymentDate = Sheets("כרטיסיות").Cells(i, col).Value
+                kabalaNum = Sheets("כרטיסיות").Cells(i, col + 4).Value
+                PaymentType = Sheets("כרטיסיות").Cells(i, col + 3).Value
+            Case "סכום"
+                FirstName = Sheets("כרטיסיות").Cells(2, col - 2).Value
+                LastName = Sheets("כרטיסיות").Cells(2, col + 2).Value
+                KabalaAmount = Sheets("כרטיסיות").Cells(i, col).Value
+                PaymentDate = Sheets("כרטיסיות").Cells(i, col - 1).Value
+                kabalaNum = Sheets("כרטיסיות").Cells(i, col + 3).Value
+                PaymentType = Sheets("כרטיסיות").Cells(i, col + 2).Value
+            Case "סטאטוס"
+                FirstName = Sheets("כרטיסיות").Cells(2, col - 3).Value
+                LastName = Sheets("כרטיסיות").Cells(2, col + 1).Value
+                KabalaAmount = Sheets("כרטיסיות").Cells(i, col - 1).Value
+                PaymentDate = Sheets("כרטיסיות").Cells(i, col - 2).Value
+                kabalaNum = Sheets("כרטיסיות").Cells(i, col + 2).Value
+                PaymentType = Sheets("כרטיסיות").Cells(i, col + 1).Value
+            Case "סוג תשלום"
+                FirstName = Sheets("כרטיסיות").Cells(2, col - 4).Value
+                LastName = Sheets("כרטיסיות").Cells(2, col).Value
+                KabalaAmount = Sheets("כרטיסיות").Cells(i, col - 2).Value
+                PaymentDate = Sheets("כרטיסיות").Cells(i, col - 3).Value
+                kabalaNum = Sheets("כרטיסיות").Cells(i, col + 1).Value
+                PaymentType = Sheets("כרטיסיות").Cells(i, col).Value
+            Case "מס' קבלה"
+                FirstName = Sheets("כרטיסיות").Cells(2, col - 5).Value
+                LastName = Sheets("כרטיסיות").Cells(2, col - 1).Value
+                KabalaAmount = Sheets("כרטיסיות").Cells(i, col - 3).Value
+                PaymentDate = Sheets("כרטיסיות").Cells(i, col - 4).Value
+                kabalaNum = Sheets("כרטיסיות").Cells(i, col).Value
+                PaymentType = Sheets("כרטיסיות").Cells(i, col - 1).Value
+            Case "תאריך הפקת קבלה"
+                FirstName = Sheets("כרטיסיות").Cells(2, col - 6).Value
+                LastName = Sheets("כרטיסיות").Cells(2, col - 2).Value
+                KabalaAmount = Sheets("כרטיסיות").Cells(i, col - 4).Value
+                PaymentDate = Sheets("כרטיסיות").Cells(i, col - 5).Value
+                kabalaNum = Sheets("כרטיסיות").Cells(i, col - 1).Value
+                PaymentType = Sheets("כרטיסיות").Cells(i, col - 2).Value
+End Select
+KabalaName = FirstName & " " & LastName
+
+'-------*****--------
+'Find Kabala number
+If IsEmpty(kabalaNum) = True Then
+
+    Sheets("מספר קבלה").Visible = True
+    Sheets("מספר קבלה").Select
+
+    max = Application.WorksheetFunction.max(Sheets("מספר קבלה").Columns("A"))
+    kabalaNum = max + 1
+
+    For Each Cell In Sheets("מספר קבלה").Columns(1).Cells
+        If Len(Cell) = 0 Then Cell.Select: Exit For
+    Next Cell
+
+    ActiveCell.Value = kabalaNum
+    Sheets("כרטיסיות").Select
+    Sheets("מספר קבלה").Visible = False
+Else
+    kabalaNum = kabalaNum
+End If
+
+Sheets("כרטיסיות").Select
+Sheets("מספר קבלה").Visible = False
+'-------*****--------
+'Prepare The kabale
+Sheets("קבלות").Visible = True
+Sheets("קבלות").Range("F5") = kabalaNum
+Sheets("קבלות").Range("F7") = KabalaName
+Sheets("קבלות").Range("F9") = KabalaAmount
+Sheets("קבלות").Range("E9") = PaymentType
+Sheets("קבלות").Range("G11") = PaymentDate
+Sheets("קבלות").Range("E15") = Date
+
+Sheets("קבלות").Select
+ActiveSheet.PrintPreview
+'Print Kabala
+
+'-------*****--------
+'Update Neder status in Sheet("כרטיסיות")
+Select Case aa
+            Case "תאריך תשלום"
+                Sheets("כרטיסיות").Cells(i, col + 2) = "שולם והודפס"
+                Sheets("כרטיסיות").Cells(i, col + 4) = kabalaNum
+                Sheets("כרטיסיות").Cells(i, col + 5) = Date
+                Sheets("כרטיסיות").Cells(i, col + 5).NumberFormat = "dd.mm.yyyy;@"
+            Case "סכום"
+                Sheets("כרטיסיות").Cells(i, col + 1) = "שולם והודפס"
+                Sheets("כרטיסיות").Cells(i, col + 3) = kabalaNum
+                Sheets("כרטיסיות").Cells(i, col + 4) = Date
+                Sheets("כרטיסיות").Cells(i, col + 4).NumberFormat = "dd.mm.yyyy;@"
+            Case "סטאטוס"
+                Sheets("כרטיסיות").Cells(i, col) = "שולם והודפס"
+                Sheets("כרטיסיות").Cells(i, col + 2) = kabalaNum
+                Sheets("כרטיסיות").Cells(i, col + 3) = Date
+                Sheets("כרטיסיות").Cells(i, col + 3).NumberFormat = "dd.mm.yyyy;@"
+            Case "סוג תשלום"
+                Sheets("כרטיסיות").Cells(i, col - 1) = "שולם והודפס"
+                Sheets("כרטיסיות").Cells(i, col + 1) = kabalaNum
+                Sheets("כרטיסיות").Cells(i, col + 2) = Date
+                Sheets("כרטיסיות").Cells(i, col + 2).NumberFormat = "dd.mm.yyyy;@"
+            Case "מס' קבלה"
+                Sheets("כרטיסיות").Cells(i, col - 2) = "שולם והודפס"
+                Sheets("כרטיסיות").Cells(i, col) = kabalaNum
+                Sheets("כרטיסיות").Cells(i, col + 1) = Date
+                Sheets("כרטיסיות").Cells(i, col + 1).NumberFormat = "dd.mm.yyyy;@"
+            Case "תאריך הפקת קבלה"
+                Sheets("כרטיסיות").Cells(i, col - 2) = "שולם והודפס"
+                Sheets("כרטיסיות").Cells(i, col - 1) = kabalaNum
+                Sheets("כרטיסיות").Cells(i, col) = Date
+                Sheets("כרטיסיות").Cells(i, col).NumberFormat = "dd.mm.yyyy;@"
+
+End Select
+
+Sheets("כרטיסיות").Select
+Sheets("קבלות").Visible = False
+
+End Sub
+Sub PrintKabalaTruma()
+
+Dim i, kabalaNum As Integer
+Dim TheMax1, TheMax2 As Double
+
+'-------*****--------
+'Find the payment row
+With Sheets("תרומות")
+    i = ActiveCell.Row
+End With
+
+'-------*****--------
+'Find Kabala number
+If IsEmpty(Sheets("תרומות").Range("H" & i)) = True Then
+
+    Sheets("מספר קבלה").Visible = True
+    Sheets("מספר קבלה").Select
+
+    max = Application.WorksheetFunction.max(Sheets("מספר קבלה").Columns("A"))
+    kabalaNum = max + 1
+
+    For Each Cell In Sheets("מספר קבלה").Columns(1).Cells
+        If Len(Cell) = 0 Then Cell.Select: Exit For
+    Next Cell
+
+    ActiveCell.Value = kabalaNum
+    Sheets("כרטיסיות").Visible = True
+    Sheets("כרטיסיות").Select
+    Sheets("מספר קבלה").Visible = False
+Else
+    kabalaNum = Sheets("תרומות").Range("H" & i).Value
+End If
+'-------*****--------
+'Prepare The kabale
+Sheets("קבלות").Visible = True
+
+Sheets("קבלות").Range("F5") = kabalaNum
+Sheets("קבלות").Range("F7") = Sheets("תרומות").Range("C" & i).Value
+Sheets("קבלות").Range("E9") = Sheets("תרומות").Range("E" & i).Value
+Sheets("קבלות").Range("F9") = Sheets("תרומות").Range("F" & i).Value
+Sheets("קבלות").Range("G11") = Sheets("תרומות").Range("B" & i).Value
+Sheets("קבלות").Range("E15") = Date
+
+Sheets("קבלות").Select
+ActiveSheet.PrintPreview
+
+
+'-------*****--------
+'Update Truma status
+
+Sheets("תרומות").Range("H" & i) = kabalaNum
+Sheets("תרומות").Range("I" & i) = Date
+Sheets("תרומות").Range("I" & i).NumberFormat = "dd.mm.yyyy;@"
+
+Sheets("תרומות").Select
+Sheets("קבלות").Visible = False
+Sheets("כרטיסיות").Visible = False
+
+Range("A" & i & ":I" & i).Select
+    Selection.Borders(xlDiagonalDown).LineStyle = xlNone
+    Selection.Borders(xlDiagonalUp).LineStyle = xlNone
+    With Selection.Borders(xlEdgeLeft)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlEdgeTop)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlEdgeBottom)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlEdgeRight)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlInsideVertical)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    Selection.Borders(xlInsideHorizontal).LineStyle = xlNone
+
+End Sub
+
+Sub FindKartisia()
+Dim i, MemberNum As Integer
+
+'-------*****--------
+'find member Number
+With Sheets("סיכום נדרים")
+    i = ActiveCell.Row
+End With
+MemberNum = Range("A" & i)
+
+'-------*****--------
+'find member in Sheets(סיכום נדרים)
+Sheets("כרטיסיות").Visible = True
+Sheets("כרטיסיות").Select
+Sheets("סיכום נדרים").Visible = False
+Sheets("כרטיסיות").Cells(1, (MemberNum * 10)).Select
+End Sub
+
+-------------------------------------------------------------------------------
+VBA MACRO חוברת_עבודה_זו.cls 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/חוברת_עבודה_זו'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+Private Sub Workbook_BeforeClose(Cancel As Boolean)
+Dim SH As Worksheet
+
+Set SH = Me.Worksheets("חברי בית הכנסת")
+SH.Visible = xlSheetHidden
+Worksheets("קבלות").Visible = False
+Worksheets("מסך ראשי").Select
+
+End Sub
+
+Private Sub Workbook_Open()
+
+ActiveWindow.DisplayWorkbookTabs = False
+ActiveWindow.DisplayGridlines = False
+End Sub
+
+
+-------------------------------------------------------------------------------
+VBA MACRO גיליון1.cls 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/גיליון1'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+(empty macro)
+-------------------------------------------------------------------------------
+VBA MACRO גיליון3.cls 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/גיליון3'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+(empty macro)
+-------------------------------------------------------------------------------
+VBA MACRO NederInput.frm 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/NederInput'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+Private Sub CommandButton1_Click()
+
+Dim x, rr, cc, member, SumNeder, i As Integer
+
+
+'-------*****--------
+' find person in "kartisiut"
+member = NederInput.TextBox1.Value
+Sheets("כרטיסיות").Visible = True
+Sheets("כרטיסיות").Select
+x = ((10 * TextBox1.Value) - 8)
+ 
+Sheets("כרטיסיות").Columns(x).Select
+
+'-------*****--------
+'find lhe first empty row in this person
+For Each Cell In Sheets("כרטיסיות").Columns(x).Cells
+    If Len(Cell) = 0 Then Cell.Select: Exit For
+Next Cell
+
+rr = ActiveCell.Row
+cc = ActiveCell.Column
+    
+
+'-------*****--------
+'Write Neder in Sheets("כרטיסיות")
+
+ActiveCell.Value = NederInput.TextBox6.Value
+ActiveCell.NumberFormat = "dd/mm/yyyy"
+
+
+ActiveCell(1, 2).Value = NederInput.TextBox7.Value
+ActiveCell(1, 3).Value = NederInput.TextBox5.Value
+
+'-------*****--------
+'Format Neder in Sheets("כרטיסיות")
+Sheets("כרטיסיות").Range(Cells(rr, cc), Cells(rr, cc + 2)).Select
+With Selection.Font
+        .Name = "Arial"
+        .Size = 9
+        .Strikethrough = False
+        .Superscript = False
+        .Subscript = False
+        .OutlineFont = False
+        .Shadow = False
+        .Underline = xlUnderlineStyleNone
+        .ThemeColor = xlThemeColorLight1
+        .TintAndShade = 0
+        .ThemeFont = xlThemeFontMinor
+    End With
+    Selection.Font.Bold = False
+SumNeder = Sheets("כרטיסיות").Cells(202, cc + 2).Value
+
+
+'-------*****--------
+' Sheet("סיכום נדרים") update
+
+Sheets("סיכום נדרים").Visible = True
+Sheets("סיכום נדרים").Select
+With Sheets("סיכום נדרים")
+    Set FindRow = .Range("A:A").Find(What:=member, LookIn:=xlValues, LookAt:=xlWhole)
+End With
+FindRowNumber = FindRow.Row
+
+Sheets("סיכום נדרים").Range("D" & FindRowNumber).Value = SumNeder
+Sheets("סיכום נדרים").Range("D" & FindRowNumber).NumberFormat = "#,##0"
+
+Sheets("סיכום נדרים").Range("F" & FindRowNumber).Value = SumNeder - Sheets("סיכום נדרים").Range("E" & FindRowNumber).Value
+Sheets("סיכום נדרים").Range("F" & FindRowNumber).NumberFormat = "#,##0"
+Sheets("חברי בית הכנסת").Select
+
+'-------*****--------
+' NederInput Form Close
+
+NederInput.TextBox1.Value = ""
+NederInput.TextBox2.Value = ""
+NederInput.TextBox3.Value = ""
+NederInput.TextBox5.Value = ""
+NederInput.TextBox7.Value = ""
+
+NederInput.Hide
+
+End Sub
+
+Private Sub CommandButton2_Click()
+
+'-------*****--------
+' Sheets("נדרים") Aborte
+
+NederInput.TextBox1.Value = ""
+NederInput.TextBox2.Value = ""
+NederInput.TextBox3.Value = ""
+NederInput.TextBox5.Value = ""
+NederInput.TextBox7.Value = ""
+
+
+NederInput.Hide
+End Sub
+
+
+-------------------------------------------------------------------------------
+VBA MACRO AddNewMembar.frm 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/AddNewMembar'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+Private Sub CommandButton1_Click()
+
+Dim LastRow As Integer
+Dim LastCol As Integer
+
+'---------********----------
+'Find the last used row in a Column
+With Sheets("חברי בית הכנסת")
+    LastRow = .Cells(.Rows.Count, "A").End(xlUp).Row
+End With
+
+'---------********----------
+'הכנסת נתונים לשורה האחרונה
+Range("A" & (LastRow + 1)) = Range("A" & LastRow).Value + 1
+Range("B" & LastRow + 1) = TextBox1.Value
+Range("C" & LastRow + 1) = TextBox2.Value
+Range("D" & LastRow + 1) = TextBox3.Value
+AddNewMembar.Hide
+
+
+'---------********----------
+'עיצוב השורה החדשה
+Range("A" & LastRow & ":E" & LastRow).Select
+    Selection.Copy
+    Range("A" & LastRow + 1 & ":E" & LastRow + 1).Select
+    Selection.PasteSpecial Paste:=xlPasteFormats, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.CutCopyMode = False
+    Range("A" & (LastRow + 1)).Select
+
+'---------********----------
+'הכנסת נתונים לגיליון סיכום נדרים
+Sheets("סיכום נדרים").Visible = True
+Sheets("סיכום נדרים").Select
+    
+With Sheets("סיכום נדרים")
+    LastRow = .Cells(.Rows.Count, "A").End(xlUp).Row
+End With
+    
+Range("A" & (LastRow + 1)) = Range("A" & LastRow).Value + 1
+Range("B" & LastRow + 1) = TextBox1.Value
+Range("C" & LastRow + 1) = TextBox2.Value
+
+'עיצוב השורה החדשה
+    Range(Cells(LastRow, 1), Cells(LastRow, 6)).Select
+    Selection.Copy
+    Range(Cells(LastRow + 1, 1), Cells(LastRow + 1, 6)).Select
+    Selection.PasteSpecial Paste:=xlPasteFormats, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+Sheets("סיכום נדרים").Visible = False
+    
+'---------********----------
+'הפעלת גיליון כרטיסיות
+Sheets("כרטיסיות").Visible = True
+Sheets("כרטיסיות").Select
+With Sheets("כרטיסיות")
+    LastCol = .Cells(1, .Columns.Count).End(xlToLeft).Column
+End With
+
+'---------********----------
+'הוספת כרטסת חדשה
+Columns(LastCol + 9).Select
+    Selection.ColumnWidth = 2
+    Range(Cells(1, LastCol), Cells(202, LastCol)).Select
+    Selection.Copy
+    Cells(1, LastCol + 10).Select
+    ActiveSheet.Paste
+    
+ '---------********----------
+'הזנת נתונים לכרטסת החדשה
+Cells(1, LastCol + 10) = LastRow
+Cells(2, LastCol + 12) = TextBox1.Value
+Cells(2, LastCol + 16) = TextBox2.Value
+
+'---------********----------
+'איפוס הנתונים בכרטיסיה
+'Cells(3, LastCol + 13) = 0
+For i = 6 To 201
+    For j = 10 To 18
+        Cells(i, LastCol + j) = ""
+    Next j
+Next i
+
+'---------********----------
+'איפוס הנתונים בטופס
+TextBox1.Value = ""
+TextBox2.Value = ""
+TextBox3.Value = ""
+'---------********----------
+'סגירת גיליון כרטיסיות
+Sheets("כרטיסיות").Visible = False
+Sheets("חברי בית הכנסת").Select
+
+End Sub
+
+
+
+
+
+-------------------------------------------------------------------------------
+VBA MACRO גיליון5.cls 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/גיליון5'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+(empty macro)
+-------------------------------------------------------------------------------
+VBA MACRO גיליון6.cls 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/גיליון6'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+(empty macro)
+-------------------------------------------------------------------------------
+VBA MACRO גיליון7.cls 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/גיליון7'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+(empty macro)
+-------------------------------------------------------------------------------
+VBA MACRO גיליון13.cls 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/גיליון13'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+(empty macro)
+-------------------------------------------------------------------------------
+VBA MACRO גיליון9.cls 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/גיליון9'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+(empty macro)
+-------------------------------------------------------------------------------
+VBA MACRO גיליון10.cls 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/גיליון10'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+(empty macro)
+-------------------------------------------------------------------------------
+VBA MACRO TrumaInput.frm 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/TrumaInput'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+Private Sub CommandButton1_Click()
+
+
+'-------*****--------
+'Find the last used row in a Column
+
+With Sheets("תרומות")
+    LastRow = .Cells(.Rows.Count, "A").End(xlUp).Row
+End With
+
+'-------*****--------
+'Write Truma in Sheets("תרומות")
+
+Sheets("תרומות").Range("A" & (LastRow + 1)).Value = LastRow
+Sheets("תרומות").Range("B" & (LastRow + 1)).Value = TrumaInput.TextBox4.Value
+Sheets("תרומות").Range("B" & (LastRow + 1)).NumberFormat = "dd/mm/yyyy;@"
+Sheets("תרומות").Range("C" & (LastRow + 1)).Value = TrumaInput.TextBox1.Value
+Sheets("תרומות").Range("D" & (LastRow + 1)).Value = TrumaInput.ComboBox2.Value
+Sheets("תרומות").Range("E" & (LastRow + 1)).Value = TrumaInput.ComboBox1.Value
+Sheets("תרומות").Range("F" & (LastRow + 1)).Value = TrumaInput.TextBox2.Value
+Sheets("תרומות").Range("G" & (LastRow + 1)).Value = TrumaInput.TextBox3.Value
+
+'-------*****--------
+'Format Truma Row in Sheets("תרומות")
+Sheets("תרומות").Visible = True
+Sheets("תרומות").Select
+Range(Cells(LastRow + 1, 1), Cells(LastRow + 1, 9)).Select
+
+    Selection.Borders(xlDiagonalDown).LineStyle = xlNone
+    Selection.Borders(xlDiagonalUp).LineStyle = xlNone
+    With Selection.Borders(xlEdgeLeft)
+        .LineStyle = xlContinuous
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlEdgeTop)
+        .LineStyle = xlContinuous
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlEdgeBottom)
+        .LineStyle = xlContinuous
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlEdgeRight)
+        .LineStyle = xlContinuous
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlInsideVertical)
+        .LineStyle = xlContinuous
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    Selection.Borders(xlInsideHorizontal).LineStyle = xlNone
+    Range("A" & LastRow).Select
+
+
+'-------*****--------
+' Sheets("תרומות") Close
+
+TrumaInput.TextBox1.Value = ""
+TrumaInput.TextBox2.Value = ""
+TrumaInput.TextBox3.Value = ""
+TrumaInput.ComboBox1.Value = ""
+TrumaInput.ComboBox2.Value = ""
+
+TrumaInput.Hide
+Sheets("תרומות").Select
+
+End Sub
+
+
+Private Sub CommandButton2_Click()
+'-------*****--------
+' Sheets("נדרים") Aborte
+
+TrumaInput.TextBox1.Value = ""
+TrumaInput.TextBox2.Value = ""
+TrumaInput.TextBox3.Value = ""
+TrumaInput.ComboBox1.Value = ""
+TrumaInput.ComboBox2.Value = ""
+
+TrumaInput.Hide
+
+End Sub
+
+
+-------------------------------------------------------------------------------
+VBA MACRO NederPayment.frm 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/NederPayment'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+
+Private Sub CommandButton1_Click()
+
+
+
+Dim x, rr, cc, member, SumPay, i As Integer
+
+'-------*****--------
+' find person in "kartisiut"
+member = NederPayment.TextBox2.Value
+Sheets("כרטיסיות").Visible = True
+Sheets("כרטיסיות").Select
+x = ((10 * member) - 8)
+ 
+Sheets("כרטיסיות").Cells(5, x + 3).Select
+
+'-------*****--------
+'find lhe first empty row in this person
+For i = 5 To 201
+Cell = Sheets("כרטיסיות").Cells(i, x + 3).Value
+    If Len(Cell) = 0 Then Sheets("כרטיסיות").Cells(i, x + 3).Select: Exit For
+Next i
+
+rr = ActiveCell.Row
+cc = ActiveCell.Column
+    
+
+
+'-------*****--------
+'Write Neder Payment details
+Sheets("כרטיסיות").Cells(rr, cc) = NederPayment.TextBox5.Value
+Sheets("כרטיסיות").Cells(rr, cc + 1) = NederPayment.TextBox4.Value
+Sheets("כרטיסיות").Cells(rr, cc + 2) = "שולם"
+Sheets("כרטיסיות").Cells(rr, cc + 3) = NederPayment.ComboBox1.Value
+
+
+'-------*****--------
+'Format Neder in Sheets("כרטיסיות")
+Sheets("כרטיסיות").Cells(rr, cc).NumberFormat = "dd.mm.yyyy;@"
+Sheets("כרטיסיות").Range(Cells(rr, cc), Cells(rr, cc + 5)).Select
+With Selection.Font
+        .Name = "Arial"
+        .Size = 9
+        .Strikethrough = False
+        .Superscript = False
+        .Subscript = False
+        .OutlineFont = False
+        .Shadow = False
+        .Underline = xlUnderlineStyleNone
+        .ThemeColor = xlThemeColorLight1
+        .TintAndShade = 0
+        .ThemeFont = xlThemeFontMinor
+    End With
+    Selection.Font.Bold = False
+SumPay = Sheets("כרטיסיות").Cells(202, cc + 1).Value
+
+'-------*****--------
+' Form("NederPayment") Close
+
+NederPayment.TextBox2.Value = ""
+NederPayment.TextBox3.Value = ""
+NederPayment.TextBox4.Value = ""
+'NederPayment.TextBox5.Value = ""
+NederPayment.ComboBox1.Value = ""
+
+NederPayment.Hide
+Sheets("כרטיסיות").Visible = False
+'-------*****--------
+' Form("סיכום נדרים") Update
+Sheets("סיכום נדרים").Select
+With Sheets("סיכום נדרים")
+    Set FindRow = .Range("A:A").Find(What:=member, LookIn:=xlValues, LookAt:=xlWhole)
+End With
+FindRowNumber = FindRow.Row
+
+Range("E" & FindRow.Row).Value = SumPay
+Sheets("סיכום נדרים").Range("E" & FindRowNumber).NumberFormat = "#,##0"
+
+Range("F" & FindRow.Row).Value = Range("D" & FindRow.Row) - SumPay
+Sheets("סיכום נדרים").Range("D" & FindRowNumber).NumberFormat = "#,##0"
+
+End Sub
+
+Private Sub CommandButton2_Click()
+
+'-------*****--------
+'Find the payment row
+With Sheets("סיכום נדרים")
+    i = ActiveCell.Row
+End With
+
+
+'-------*****--------
+' Form("NederPayment") Close
+
+NederPayment.TextBox2.Value = ""
+NederPayment.TextBox3.Value = ""
+NederPayment.TextBox4.Value = ""
+'NederPayment.TextBox5.Value = ""
+
+
+NederPayment.Hide
+Sheets("סיכום נדרים").Range("A" & i).Select
+End Sub
+
+
+
+-------------------------------------------------------------------------------
+VBA MACRO גיליון2.cls 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/גיליון2'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+(empty macro)
+-------------------------------------------------------------------------------
+VBA MACRO NewHotzaa.frm 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/NewHotzaa'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+Private Sub CommandButton1_Click()
+'-------*****--------
+'Check Mandatory details
+
+If NewHotzaa.TextBox4.Value = "" Then
+    MsgBox "נדרש למלא את סך ההוצאה"
+    GoTo Line1:
+End If
+If NewHotzaa.TextBox3.Value = "" Then
+    MsgBox "נדרש למלא את פירוט ההוצאה"
+    GoTo Line1:
+End If
+If IsNumeric(NewHotzaa.TextBox4.Value) = False Then
+    MsgBox "סך ההוצאה צריך להיות מספר"
+    NewHotzaa.TextBox4.Value = ""
+    GoTo Line1:
+End If
+
+'-------*****--------
+'Write Hotzaa details
+i = ActiveCell.Row
+Sheets("הוצאות").Cells(i, 1) = NewHotzaa.TextBox1.Value
+Sheets("הוצאות").Cells(i, 2) = NewHotzaa.TextBox2.Value
+Sheets("הוצאות").Cells(i, 3) = NewHotzaa.TextBox4.Value
+Sheets("הוצאות").Cells(i, 4) = NewHotzaa.TextBox3.Value
+Sheets("הוצאות").Cells(i, 5) = NewHotzaa.TextBox5.Value
+
+'-------*****--------
+'Format Hotzaa row
+Range("A" & i & ":E" & i).Select
+Selection.Borders(xlDiagonalDown).LineStyle = xlNone
+Selection.Borders(xlDiagonalUp).LineStyle = xlNone
+    With Selection.Borders(xlEdgeLeft)
+        .LineStyle = xlContinuous
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlEdgeTop)
+        .LineStyle = xlContinuous
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlEdgeBottom)
+        .LineStyle = xlContinuous
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlEdgeRight)
+        .LineStyle = xlContinuous
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlInsideVertical)
+        .LineStyle = xlContinuous
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+Selection.Borders(xlInsideHorizontal).LineStyle = xlNone
+NewHotzaa.Hide
+'-------*****--------
+'Calculate SumHotzaot
+
+SumHotzaot = Application.Sum(Range(Cells(1, 3), Cells(i, 3)))
+
+Range("C" & i + 1).Select
+ActiveCell.Value = SumHotzaot
+Range("C" & i).Font.Bold = False
+Selection.Font.Bold = True
+Selection.NumberFormat = "[$₪-he-IL] #,##0.00"
+Columns("C:C").EntireColumn.AutoFit
+
+NewHotzaa.Hide
+
+Range("C" & i + 1).Select
+    With Selection.Interior
+        .Pattern = xlSolid
+        .PatternColorIndex = xlAutomatic
+        .ThemeColor = xlThemeColorDark1
+        .TintAndShade = -0.149998474074526
+        .PatternTintAndShade = 0
+    End With
+    
+    Selection.Borders(xlDiagonalDown).LineStyle = xlNone
+    Selection.Borders(xlDiagonalUp).LineStyle = xlNone
+    With Selection.Borders(xlEdgeLeft)
+        .LineStyle = xlContinuous
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlEdgeTop)
+        .LineStyle = xlContinuous
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlEdgeBottom)
+        .LineStyle = xlContinuous
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlEdgeRight)
+        .LineStyle = xlContinuous
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    Selection.Borders(xlInsideVertical).LineStyle = xlNone
+    Selection.Borders(xlInsideHorizontal).LineStyle = xlNone
+Range("C" & i).Select
+    With Selection.Interior
+        .Pattern = xlNone
+        .TintAndShade = 0
+        .PatternTintAndShade = 0
+    End With
+
+    Selection.NumberFormat = "#,##0.0"
+
+Line1:
+End Sub
+
+Private Sub CommandButton2_Click()
+NewHotzaa.TextBox1.Value = ""
+NewHotzaa.TextBox2.Value = ""
+NewHotzaa.TextBox3.Value = ""
+NewHotzaa.TextBox4.Value = ""
+NewHotzaa.TextBox5.Value = ""
+NewHotzaa.Hide
+End Sub
+-------------------------------------------------------------------------------

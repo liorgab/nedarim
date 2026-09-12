@@ -1,0 +1,37 @@
+# בדיקות על כל דחיפה ועל כל Pull Request.
+#
+# זה מה שמאפשר לקבל תרומות מאנשים שאינך מכיר: לפני שאתה בכלל קורא את
+# הקוד, GitHub כבר הריץ את כל הבדיקות ואת בדיקת הטיפוסים ואומר לך אם
+# משהו נשבר.
+name: בדיקות
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `npm ci` ולא `npm install`: מתקין בדיוק את מה שרשום ב-lock,
+      # כך שהבדיקה רצה על אותן גרסאות בדיוק שרצות אצלך.
+      - run: npm ci
+
+      - name: טיפוסים ו-lint
+        run: npm run check
+
+      - name: בדיקות
+        run: npm test
+
+      # רשימת הרישיונות נגזרת מ-node_modules בפועל. אם תרומה הוסיפה
+      # חבילה עם רישיון שאינו תואם – נדע כאן ולא אחרי ההפצה.
+      - name: רישיונות
+        run: npm run licenses
