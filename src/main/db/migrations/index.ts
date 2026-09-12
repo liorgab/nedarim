@@ -8,6 +8,7 @@ import sql007 from './007_notify_events.sql?raw';
 import sql008 from './008_occasion_sedra_keys.sql?raw';
 import sql009 from './009_shavuot_key.sql?raw';
 import sql010 from './010_setup_wizard.sql?raw';
+import sql011 from './011_setup_completed_backfill.sql?raw';
 
 export interface Migration {
   version: number;
@@ -34,6 +35,7 @@ export const MIGRATIONS: readonly Migration[] = [
   { version: 8, name: '008_occasion_sedra_keys', sql: sql008 },
   { version: 9, name: '009_shavuot_key', sql: sql009 },
   { version: 10, name: '010_setup_wizard', sql: sql010 },
+  { version: 11, name: '011_setup_completed_backfill', sql: sql011 },
 ];
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS.reduce((max, m) => Math.max(max, m.version), 0);

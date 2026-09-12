@@ -7,7 +7,12 @@ import { openDatabase } from '../db/connection';
 import { seed } from '../db/seed';
 import { SETTING_SPECS } from './configuration';
 import { setSetting } from './settings';
+import { MIGRATIONS } from '../db/migrations';
 import { WIZARD_STEPS, completeSetup, reopenSetup, wizardKeys, wizardState } from './setupWizard';
+
+/** ה-SQL של מיגרציה 011, כפי שהוא רץ אצל משתמש שמשדרג. */
+const migration011 = (): string =>
+  MIGRATIONS.find((m) => m.name === '011_setup_completed_backfill')!.sql;
 
 /** F-110..F-114 – אשף ההתקנה הראשונה. */
 
@@ -95,6 +100,36 @@ describe('מצב האשף', () => {
     const state = reopenSetup(db);
     expect(state.completed).toBe(false);
     expect(state.completedAt).toBeNull();
+  });
+
+  it('התקנה שכבר הוגדרה אינה רואה את האשף (מיגרציה 011)', () => {
+    // מיגרציה 010 הוסיפה את השדה ריק לכולם, ולכן מערכת עם 90 חברים
+    // וקבלות קיבלה מסך "ברוך הבא – הגדרה ראשונה". התגלה בהתקנה אמיתית.
+    //
+    // נבדק ה-SQL עצמו ולא `openDatabase`, כי ה-DB כאן כבר ממוגרר לגרסה
+    // האחרונה – והמצב שמעניין הוא זה של משתמש קיים שמשדרג.
+    setSetting(db, 'synagogue_name', 'בית כנסת ותיק');
+    setSetting(db, 'setup_completed_at', '');
+    expect(wizardState(db).completed).toBe(false);
+
+    db.exec(migration011());
+    expect(wizardState(db).completed).toBe(true);
+    expect(wizardState(db).completedAt).toBe('pre-wizard');
+  });
+
+  it('התקנה חדשה שמשדרגת עדיין רואה את האשף', () => {
+    // בלי שם בית כנסת אין על מה לדלג.
+    setSetting(db, 'setup_completed_at', '');
+    db.exec(migration011());
+    expect(wizardState(db).completed).toBe(false);
+  });
+
+  it('המיגרציה אינה דורסת אשף שכבר הושלם', () => {
+    setSetting(db, 'synagogue_name', 'בית כנסת');
+    completeSetup(db);
+    const before = wizardState(db).completedAt;
+    db.exec(migration011());
+    expect(wizardState(db).completedAt).toBe(before);
   });
 
   it('המצב אינו נגזר משם בית הכנסת', () => {
