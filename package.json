@@ -69,5 +69,13 @@
   },
   "author": {
     "name": "NEDARIM contributors"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/liorgab/nedarim.git"
+  },
+  "bugs": {
+    "url": "https://github.com/liorgab/nedarim/issues"
+  },
+  "homepage": "https://github.com/liorgab/nedarim"
 }
