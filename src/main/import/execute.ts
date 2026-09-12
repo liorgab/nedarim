@@ -32,6 +32,15 @@ export interface ExecuteInput {
   mode: ImportMode;
   sheets: readonly SheetData[];
   userId: number;
+  /**
+   * הרצה יבשה: הכול קורה באמת – כולל אילוצי ה-DB, המפתחות הזרים ומספור
+   * אוטומטי – ואז מתגלגל אחורה.
+   *
+   * זו הדרך היחידה לדעת מראש "יתווספו 1,268, יעודכנו 12, ידולגו 3" בלי
+   * לשקר: כל חישוב מקדים שאינו מריץ את אותו קוד סופו להתפצל ממנו, ואז
+   * המספרים שהוצגו בשלב הבדיקה אינם מה שקרה בייבוא.
+   */
+  dryRun?: boolean;
 }
 
 export interface SheetResult {
@@ -387,16 +396,36 @@ export function executeImport(db: Database, input: ExecuteInput): ExecuteResult 
       { insert: 0, update: 0, enrich: 0, skip: 0 },
     );
 
-    writeAudit(db, {
-      userId: input.userId,
-      entity: 'import',
-      entityId: 0,
-      action: 'create',
-      after: { mode: input.mode, sheets: results.map((r) => r.entity), totals },
-    });
+    // הרצה יבשה אינה אירוע שנרשם ביומן – שום דבר לא קרה.
+    if (input.dryRun !== true) {
+      writeAudit(db, {
+        userId: input.userId,
+        entity: 'import',
+        entityId: 0,
+        action: 'create',
+        after: { mode: input.mode, sheets: results.map((r) => r.entity), totals },
+      });
+    }
+
+    // החריגה היא מה שמגלגל את הטרנזקציה אחורה. אין ב-better-sqlite3 דרך
+    // אחרת לצאת מטרנזקציה בלי לשמור.
+    if (input.dryRun === true) throw new DryRunRollback({ sheets: results, totals });
 
     return { sheets: results, totals };
   });
 
-  return run();
+  try {
+    return run();
+  } catch (error) {
+    if (error instanceof DryRunRollback) return error.result;
+    throw error;
+  }
+}
+
+/** נושאת את התוצאה החוצה מטרנזקציה שמתגלגלת אחורה בכוונה. */
+class DryRunRollback extends Error {
+  constructor(readonly result: ExecuteResult) {
+    super('dry run');
+    this.name = 'DryRunRollback';
+  }
 }
