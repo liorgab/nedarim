@@ -169,6 +169,7 @@ const api: NedarimApi = {
     modes: () => invoke('importer:modes'),
     downloadTemplate: () => invoke('importer:downloadTemplate'),
     chooseFile: () => invoke('importer:chooseFile'),
+    chooseBackup: () => invoke('importer:chooseBackup'),
     current: () => invoke('importer:current'),
     updateSheet: (index, patch) => invoke('importer:updateSheet', index, patch),
     preflight: () => invoke('importer:preflight'),

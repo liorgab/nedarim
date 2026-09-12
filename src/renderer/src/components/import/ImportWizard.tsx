@@ -174,12 +174,21 @@ export function ImportWizard({
               guard(async () => {
                 const choice = await window.api.importer.chooseFile();
                 if (choice.kind === 'cancelled') return;
+                if (choice.kind === 'invalid') throw new Error(choice.message);
                 if (choice.kind === 'backup') {
                   onRestoreRequested(choice.path);
                   return;
                 }
                 setFile(choice.file);
                 setValidation(null);
+              })
+            }
+            onChooseBackup={() =>
+              guard(async () => {
+                const choice = await window.api.importer.chooseBackup();
+                if (choice.kind === 'cancelled') return;
+                if (choice.kind === 'invalid') throw new Error(choice.message);
+                if (choice.kind === 'backup') onRestoreRequested(choice.path);
               })
             }
             onDownloadTemplate={() =>

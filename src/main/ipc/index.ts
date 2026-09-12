@@ -715,8 +715,6 @@ const handlers: Record<IpcChannel, Handler> = {
 
     const res = await dialog.showOpenDialog({
       title: 'בחירת קובץ לייבוא',
-      // `openDirectory` כדי שאפשר יהיה לבחור תיקיית גיבוי: הגבאי שמתבקש
-      // "לבחור קובץ" יבחר לפעמים את הגיבוי, וזה הקובץ שהוא מכיר.
       properties: ['openFile'],
       filters: [
         { name: 'קובץ נתונים', extensions: ['xlsx', 'xlsm', 'csv'] },
@@ -730,6 +728,22 @@ const handlers: Record<IpcChannel, Handler> = {
     // המצורפים, וייבוא לא.
     if (isBackupFolder(path)) return { kind: 'backup', path };
     return { kind: 'file', file: await openImportFile(path) };
+  }) as Handler,
+  'importer:chooseBackup': (async () => {
+    const res = await dialog.showOpenDialog({
+      title: 'בחירת תיקיית גיבוי',
+      properties: ['openDirectory'],
+    });
+    const path = res.canceled ? undefined : res.filePaths[0];
+    if (path === undefined) return { kind: 'cancelled' };
+    if (!isBackupFolder(path)) {
+      return {
+        kind: 'invalid',
+        message:
+          'התיקייה שנבחרה אינה גיבוי של המערכת. תיקיית גיבוי מכילה את הקבצים nedarim.db ו-manifest.json.',
+      };
+    }
+    return { kind: 'backup', path };
   }) as Handler,
   'importer:current': () => currentSession(),
   'importer:updateSheet': ((index: number, patch: Parameters<typeof updateSheet>[1]) =>

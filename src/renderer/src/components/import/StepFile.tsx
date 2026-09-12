@@ -26,10 +26,17 @@ export interface StepFileProps {
   file: ImportFileDto | null;
   catalog: ImportEntityDto[];
   onChoose: () => void;
+  onChooseBackup: () => void;
   onDownloadTemplate: () => void;
 }
 
-export function StepFile({ file, catalog, onChoose, onDownloadTemplate }: StepFileProps) {
+export function StepFile({
+  file,
+  catalog,
+  onChoose,
+  onChooseBackup,
+  onDownloadTemplate,
+}: StepFileProps) {
   const labelOf = (id: string): string =>
     catalog.find((e) => e.id === id)?.label ?? id;
 
@@ -50,11 +57,18 @@ export function StepFile({ file, catalog, onChoose, onDownloadTemplate }: StepFi
         </Stack>
       </Paper>
 
-      <Box>
+      <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
         <Button variant="contained" onClick={onChoose}>
           {file === null ? he.importer.chooseFile : he.importer.replaceFile}
         </Button>
-      </Box>
+        <Button variant="text" onClick={onChooseBackup}>
+          {he.importer.chooseBackup}
+        </Button>
+      </Stack>
+
+      <Typography variant="caption" color="text.secondary">
+        {he.importer.backupHelp}
+      </Typography>
 
       {file === null ? null : (
         <Paper variant="outlined">

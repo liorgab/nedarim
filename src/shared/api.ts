@@ -840,6 +840,8 @@ export interface ImportFileDto {
 export type ImportChoiceDto =
   | { kind: 'file'; file: ImportFileDto }
   | { kind: 'backup'; path: string }
+  /** נבחרה תיקייה שאינה גיבוי – ההודעה מוצגת למשתמש. */
+  | { kind: 'invalid'; message: string }
   | { kind: 'cancelled' };
 
 export interface ImportPreflightDto {
@@ -899,8 +901,16 @@ export interface ImportApi {
   modes(): Promise<ImportModeInfoDto[]>;
   /** F-122 – הורדת תבנית האקסל. מחזיר את הנתיב שנשמר, או null בביטול. */
   downloadTemplate(): Promise<string | null>;
-  /** F-123 – בחירת קובץ. מזהה גם תיקיית גיבוי ומפנה לשחזור. */
+  /** F-123 – בחירת קובץ נתונים. */
   chooseFile(): Promise<ImportChoiceDto>;
+  /**
+   * F-127 – בחירת תיקיית גיבוי.
+   *
+   * נפרד מ-`chooseFile` כי גיבוי הוא **תיקייה**, ודיאלוג של Windows אינו
+   * יכול לבחור קובץ ותיקייה באותה פתיחה. שני כפתורים הם המחיר, והחלופה
+   * היא מסלול שאי אפשר להגיע אליו.
+   */
+  chooseBackup(): Promise<ImportChoiceDto>;
   /** הקובץ שנפתח, אם יש. */
   current(): Promise<ImportFileDto | null>;
   /** F-125 – שינוי מיפוי, יישות או הכללה של גיליון. */
@@ -1473,6 +1483,7 @@ export const IPC_CHANNELS = {
   'importer:modes': true,
   'importer:downloadTemplate': true,
   'importer:chooseFile': true,
+  'importer:chooseBackup': true,
   'importer:current': true,
   'importer:updateSheet': true,
   'importer:preflight': true,
