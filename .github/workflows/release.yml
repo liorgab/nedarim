@@ -49,8 +49,12 @@ jobs:
         run: npm run icon
 
       # `npm run build` מריץ שוב check ו-test; כאן הם כבר רצו.
+      #
+      # `--publish never` הכרחי: ב-CI עם תגית, electron-builder מנסה
+      # לפרסם ל-GitHub בעצמו ונופל על היעדר GH_TOKEN. הפרסום נעשה בשלב
+      # הבא, שגם מצרף את תיאור השחרור מה-CHANGELOG.
       - name: אריזה
-        run: npx electron-vite build && npx electron-builder --win --x64
+        run: npx electron-vite build && npx electron-builder --win --x64 --publish never
 
       - name: פרסום Release
         uses: softprops/action-gh-release@v2
