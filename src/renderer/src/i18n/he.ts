@@ -840,11 +840,43 @@ export const he = {
       previewTitle: 'ההודעה שתישלח לכל נמען',
       saveDraft: 'שמור קמפיין',
       savedDraft: (n: number) =>
-        `הקמפיין נשמר (${n} נמענים). השליחה עצמה תיפתח בשלב הבא של הפיתוח.`,
+        `הקמפיין נשמר (${n} נמענים) בלי שנשלחה הודעה. אפשר להתחיל אותו מרשימת הקמפיינים.`,
       duplicateWarning: (phone: string, names: string) =>
         `המספר ${phone} משויך ליותר מחבר אחד: ${names}. שליחה תגיע לאותו מכשיר פעמיים.`,
       willBeSkipped: 'ידולג',
       notSendable: 'לא ניתן לשליחה',
+      startSending: 'התחל שליחה',
+      saveForLater: 'שמור בלי לשלוח',
+    },
+
+    /** W-40..W-46 – מודאל ההתקדמות. */
+    progress: {
+      title: 'שליחה מתבצעת',
+      sendingTo: (name: string, index: number, total: number) =>
+        `שולח ל${name} (${index}/${total})…`,
+      waiting: (seconds: number) => `ממתין ${seconds} שנ׳ לפני ההודעה הבאה…`,
+      counters: { sent: 'נשלחו', failed: 'נכשלו', skipped: 'דולגו', pending: 'ממתינים' },
+      pause: 'השהה',
+      resume: 'המשך',
+      cancel: 'בטל',
+      confirmCancel:
+        'לבטל את הקמפיין? הפריטים שטרם נשלחו יסומנו כמבוטלים. ההודעות שכבר יצאו לא יבוטלו.',
+      confirmCancelYes: 'ביטול הקמפיין',
+      confirmCancelNo: 'חזרה',
+      done: 'הקמפיין הסתיים',
+      close: 'סגירה',
+      exportExcel: 'ייצוא ל-Excel',
+      itemStatus: {
+        pending: 'ממתין',
+        sending: 'שולח…',
+        sent: 'נשלח',
+        failed: 'נכשל',
+        skipped: 'דולג',
+        unknown: 'לא ידוע',
+      },
+      /** W-46 – ניסיון חוזר רק לכשלים שיש טעם לחזור עליהם. */
+      retryFailed: 'נסה שוב את הכשלים',
+      noRetryable: 'אין כשלים שניתן לנסות שוב.',
     },
 
     /** W-80..W-89 – הודעה בכל אירוע כספי. */

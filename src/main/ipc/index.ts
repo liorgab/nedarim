@@ -105,6 +105,13 @@ import {
 import { estimateSeconds } from '../whatsapp/sessionState';
 import { sendCampaignItem, firstPendingItem } from '../services/sendMessage';
 import { sendOne as sendOneMessage } from '../whatsapp/MessageSender';
+import {
+  cancelCampaign,
+  configureRunnerHost,
+  latestProgress,
+  pauseCampaign,
+  startCampaign,
+} from '../whatsapp/runnerHost';
 import { whatsAppWindow } from '../whatsapp/WhatsAppWindow';
 import { errorText } from '../whatsapp/sendOutcome';
 import { sendUrl } from '../whatsapp/selectors';
@@ -849,6 +856,15 @@ const handlers: Record<IpcChannel, Handler> = {
   'campaigns:list': () => listCampaigns(getDb()),
   'campaigns:get': ((id: number) => getCampaign(getDb(), id)) as Handler,
   'campaigns:getUnfinished': () => getUnfinishedCampaign(getDb()),
+  'campaigns:start': (async (campaignId: number) =>
+    startCampaign(getDb(), campaignId, actor().id)) as Handler,
+  'campaigns:pause': () => {
+    pauseCampaign();
+  },
+  'campaigns:cancel': () => {
+    cancelCampaign();
+  },
+  'campaigns:progress': () => latestProgress(),
   'campaigns:sendOne': (async (
     memberId: number,
     body: string,
@@ -1019,6 +1035,8 @@ function registerPushEvents(): void {
 
 export function registerIpcHandlers(): void {
   registerPushEvents();
+  // `MessageSender` צריך את תיקיית הנתונים; המודול עצמו אינו מכיר את `app`.
+  configureRunnerHost(getUserDataDir());
   for (const channel of Object.keys(IPC_CHANNELS) as IpcChannel[]) {
     const handler = handlers[channel];
     ipcMain.handle(channel, async (_event, ...args) => {

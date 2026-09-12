@@ -211,6 +211,11 @@ const api: NedarimApi = {
     getUnfinished: () => invoke('campaigns:getUnfinished'),
     sendOne: (memberId, body, templateId, trigger) =>
       invoke('campaigns:sendOne', memberId, body, templateId, trigger),
+    start: (campaignId) => invoke('campaigns:start', campaignId),
+    pause: () => invoke('campaigns:pause'),
+    cancel: () => invoke('campaigns:cancel'),
+    progress: () => invoke('campaigns:progress'),
+    onProgress: (callback) => subscribe('campaign:progress', callback),
   },
   whatsapp: {
     moduleState: () => invoke('whatsapp:moduleState'),

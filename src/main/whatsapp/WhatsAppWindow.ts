@@ -71,6 +71,22 @@ function publish(next: WaStatusDto): void {
   for (const listener of listeners) listener(next);
 }
 
+/**
+ * עזר בדיקות: מפרסם מצב "מחובר" בלי סשן אמיתי, לצד `NEDARIM_FAKE_WA_SEND`.
+ *
+ * קיים כדי שאפשר יהיה לראות את מסכי השליחה בעיניים (כלל-על 17) בלי לחבר
+ * טלפון אמיתי ובלי לשלוח הודעות. המתקשר אחראי לוודא שהיישום אינו ארוז.
+ */
+export function publishSimulatedReady(): void {
+  publish({
+    state: 'ready',
+    phone: 'סימולציה',
+    since: nowIso(),
+    windowOpen: false,
+    message: 'מצב סימולציה – לא נשלחות הודעות אמיתיות',
+  });
+}
+
 export function isWindowOpen(): boolean {
   return win !== null && !win.isDestroyed();
 }

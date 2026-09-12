@@ -23,10 +23,17 @@ import {
   Typography,
 } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import type { MessageTemplateDto, PreparedCampaignDto, PreparedItemDto } from '@shared/api';
+import type {
+  CampaignDetailDto,
+  CampaignProgressDto,
+  MessageTemplateDto,
+  PreparedCampaignDto,
+  PreparedItemDto,
+} from '@shared/api';
 import { formatAgorot } from '../../lib/format';
 import { useWhatsAppStatus } from '../../hooks/useWhatsAppStatus';
 import { ConnectionStep } from './ConnectionStep';
+import { ProgressPanel } from './ProgressPanel';
 import { he } from '../../i18n/he';
 
 export interface SendWizardDialogProps {
@@ -39,11 +46,11 @@ export interface SendWizardDialogProps {
 const ONE_OFF = 'one-off';
 
 /**
- * W-30..W-38 – אשף השליחה.
+ * W-30..W-38, W-40..W-43 – אשף השליחה, ארבעה שלבים.
  *
- * ב-W0 קיימים שני השלבים הראשונים בלבד: נמענים והודעה. שלבי החיבור והשליחה
- * (3–4) נוספים ב-W1/W3, ולכן הכפתור האחרון שומר את הקמפיין כטיוטה במקום
- * להתחיל לשלוח. הצעדים כבר מוצגים ב-Stepper כדי שהמבנה יהיה ברור לגבאי.
+ * שלב 4 אינו "עוד מסך": ברגע שהוא נפתח הקמפיין כבר רץ ב-main, והמסך רק
+ * מציג את מה שנדחף אליו. לכן אין ממנו "אחורה" (W-38) – אי אפשר לחזור
+ * ולערוך טקסט של הודעות שכבר יצאו.
  */
 export function SendWizardDialog({ open, memberIds, onClose, onSaved }: SendWizardDialogProps) {
   const [step, setStep] = useState(0);
@@ -55,7 +62,32 @@ export function SendWizardDialog({ open, memberIds, onClose, onSaved }: SendWiza
   const [removed, setRemoved] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [campaignId, setCampaignId] = useState<number | null>(null);
+  const [progress, setProgress] = useState<CampaignProgressDto | null>(null);
+  const [detail, setDetail] = useState<CampaignDetailDto | null>(null);
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const waStatus = useWhatsAppStatus();
+
+  /**
+   * W-44 – ההתקדמות מגיעה ב-push מ-main.
+   *
+   * הפירוט נטען מחדש רק כשמונה משתנה, ולא בכל אירוע: ספירה לאחור דוחפת
+   * אירוע כל שנייה, ושאילתה על 90 פריטים בכל אחת מהן היא בזבוז.
+   */
+  useEffect(() => {
+    if (!open) return;
+    return window.api.campaigns.onProgress((p) => {
+      setProgress((previous) => {
+        const changed =
+          previous === null ||
+          previous.sent !== p.sent ||
+          previous.failed !== p.failed ||
+          previous.skipped !== p.skipped;
+        if (changed) void window.api.campaigns.get(p.campaignId).then(setDetail);
+        return p;
+      });
+    });
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -120,16 +152,64 @@ export function SendWizardDialog({ open, memberIds, onClose, onSaved }: SendWiza
     setBusy(true);
     setError(null);
     try {
-      const id = await window.api.campaigns.create({ ...prepared, name });
+      await window.api.campaigns.create({ ...prepared, name });
       onSaved(he.whatsapp.send.savedDraft(prepared.items.length));
       onClose();
-      void id;
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
   }
+
+  /**
+   * יוצר את הקמפיין ומתחיל לשלוח.
+   *
+   * הקמפיין נשמר **לפני** השליחה ולא בסופה: כך הפריטים שכבר יצאו נשארים
+   * רשומים גם אם היישום נסגר באמצע, וזה מה שמאפשר להמשיך אחר כך.
+   */
+  async function startSending(): Promise<void> {
+    if (!prepared) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const id = await window.api.campaigns.create({ ...prepared, name });
+      setCampaignId(id);
+      setDetail(await window.api.campaigns.get(id));
+      setStep(3);
+      // לא ממתינים לסיום: `start` חוזרת רק כשהקמפיין נעצר, וההתקדמות
+      // בינתיים מגיעה באירועים.
+      void window.api.campaigns
+        .start(id)
+        .then(async (final) => {
+          setProgress(final);
+          setDetail(await window.api.campaigns.get(id));
+        })
+        .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
+        .finally(() => setBusy(false));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setBusy(false);
+    }
+  }
+
+  async function resume(): Promise<void> {
+    if (campaignId === null) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const final = await window.api.campaigns.start(campaignId);
+      setProgress(final);
+      setDetail(await window.api.campaigns.get(campaignId));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const running = progress?.phase === 'running';
+  const finished = progress?.phase === 'completed' || progress?.phase === 'cancelled';
 
   const items = prepared?.items ?? [];
 
@@ -200,6 +280,8 @@ export function SendWizardDialog({ open, memberIds, onClose, onSaved }: SendWiza
           <ConnectionStep status={waStatus} recipientCount={prepared?.sendableCount ?? 0} />
         ) : null}
 
+        {step === 3 ? <ProgressPanel progress={progress} detail={detail} /> : null}
+
         {step === 1 ? (
           <>
             <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
@@ -266,15 +348,18 @@ export function SendWizardDialog({ open, memberIds, onClose, onSaved }: SendWiza
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} disabled={busy}>
-          {he.app.cancel}
+        {/* W-38 – בשלב 4 אין סגירה בשקט בזמן שהקמפיין רץ. */}
+        <Button onClick={onClose} disabled={busy || running}>
+          {step === 3 ? he.whatsapp.progress.close : he.app.cancel}
         </Button>
         <Box sx={{ flex: 1 }} />
-        {step > 0 ? (
+
+        {step > 0 && step < 3 ? (
           <Button onClick={() => setStep((s) => s - 1)} disabled={busy}>
             {he.whatsapp.send.back}
           </Button>
         ) : null}
+
         {step < 2 ? (
           <Button
             variant="contained"
@@ -287,16 +372,63 @@ export function SendWizardDialog({ open, memberIds, onClose, onSaved }: SendWiza
           >
             {he.whatsapp.send.next}
           </Button>
-        ) : (
-          <Button
-            variant="contained"
-            onClick={() => void saveDraft()}
-            disabled={busy || prepared === null || waStatus?.state !== 'ready'}
-          >
-            {he.whatsapp.send.saveDraft}
-          </Button>
-        )}
+        ) : null}
+
+        {step === 2 ? (
+          <>
+            <Button onClick={() => void saveDraft()} disabled={busy || prepared === null}>
+              {he.whatsapp.send.saveForLater}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => void startSending()}
+              disabled={busy || prepared === null || waStatus?.state !== 'ready'}
+            >
+              {he.whatsapp.send.startSending}
+            </Button>
+          </>
+        ) : null}
+
+        {step === 3 && !finished ? (
+          <>
+            <Button color="error" onClick={() => setConfirmCancel(true)} disabled={!running}>
+              {he.whatsapp.progress.cancel}
+            </Button>
+            {running ? (
+              <Button variant="contained" onClick={() => void window.api.campaigns.pause()}>
+                {he.whatsapp.progress.pause}
+              </Button>
+            ) : (
+              <Button variant="contained" onClick={() => void resume()} disabled={busy}>
+                {he.whatsapp.progress.resume}
+              </Button>
+            )}
+          </>
+        ) : null}
       </DialogActions>
+
+      {/* W-43 – ביטול דורש אישור: ההודעות שכבר יצאו אינן חוזרות. */}
+      <Dialog open={confirmCancel} onClose={() => setConfirmCancel(false)}>
+        <DialogTitle>{he.whatsapp.progress.cancel}</DialogTitle>
+        <DialogContent>
+          <Typography>{he.whatsapp.progress.confirmCancel}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmCancel(false)}>
+            {he.whatsapp.progress.confirmCancelNo}
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={() => {
+              setConfirmCancel(false);
+              void window.api.campaigns.cancel();
+            }}
+          >
+            {he.whatsapp.progress.confirmCancelYes}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   );
 }

@@ -1208,6 +1208,27 @@ export interface SendOneResultDto {
   campaignId: number;
 }
 
+export interface CampaignProgressDto {
+  campaignId: number;
+  phase: 'idle' | 'running' | 'paused' | 'completed' | 'cancelled';
+  total: number;
+  sent: number;
+  failed: number;
+  skipped: number;
+  pending: number;
+  currentItemId: number | null;
+  currentName: string | null;
+  waitSeconds: number;
+  stopReason:
+    | 'user_pause'
+    | 'user_cancel'
+    | 'daily_cap'
+    | 'consecutive_failures'
+    | 'disconnected'
+    | null;
+  message: string | null;
+}
+
 export interface CampaignsApi {
   /**
    * W-22 – שליחה לחבר יחיד, כקמפיין של פריט אחד.
@@ -1232,6 +1253,19 @@ export interface CampaignsApi {
   get(id: number): Promise<CampaignDetailDto | null>;
   /** W-47 – קמפיין שנקטע, לבאנר בדשבורד. */
   getUnfinished(): Promise<CampaignSummaryDto | null>;
+  /**
+   * W3 – מתחיל או ממשיך קמפיין. חוסמת עד שהקמפיין נעצר או מסתיים,
+   * ומחזירה את התמונה האחרונה. ההתקדמות בדרך מגיעה דרך `onProgress`.
+   */
+  start(campaignId: number): Promise<CampaignProgressDto>;
+  /** W-43 – עוצר אחרי ההודעה הנוכחית, לא באמצעה. */
+  pause(): Promise<void>;
+  /** W-43 – מסמן את מה שטרם נשלח כמבוטל. */
+  cancel(): Promise<void>;
+  /** התמונה האחרונה – למסך שנפתח באמצע קמפיין. */
+  progress(): Promise<CampaignProgressDto | null>;
+  /** W-44 – אירועי התקדמות חיים. */
+  onProgress(callback: (progress: CampaignProgressDto) => void): Unsubscribe;
 }
 
 // ---------------------------------------------------------------- וואטסאפ: מודול
@@ -1291,10 +1325,12 @@ export interface CampaignEstimateDto {
  */
 export interface IpcEventPayloads {
   'whatsapp:status': WaStatusDto;
+  'campaign:progress': CampaignProgressDto;
 }
 
 export const IPC_EVENTS = {
   'whatsapp:status': true,
+  'campaign:progress': true,
 } as const;
 
 export type IpcEvent = keyof typeof IPC_EVENTS;
@@ -1519,6 +1555,10 @@ export const IPC_CHANNELS = {
   'campaigns:get': true,
   'campaigns:getUnfinished': true,
   'campaigns:sendOne': true,
+  'campaigns:start': true,
+  'campaigns:pause': true,
+  'campaigns:cancel': true,
+  'campaigns:progress': true,
 
   'whatsapp:moduleState': true,
   'whatsapp:acceptConsent': true,
