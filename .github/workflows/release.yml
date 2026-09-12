@@ -38,8 +38,14 @@ jobs:
       - run: npm run check
       - run: npm test
 
+      # תיאור השחרור מגיע מ-CHANGELOG. נכשל רועש אם אין סעיף לגרסה הזו –
+      # עדיף להיעצר מאשר לפרסם "גרסה חדשה" בלי להסביר מה השתנה.
+      - name: תיאור השחרור
+        run: npm run release:notes -- ${{ github.ref_name }}
+
+      # `npm run build` מריץ שוב check ו-test; כאן הם כבר רצו.
       - name: אריזה
-        run: npm run build
+        run: npx electron-vite build && npx electron-builder --win --x64
 
       - name: פרסום Release
         uses: softprops/action-gh-release@v2
@@ -50,6 +56,5 @@ jobs:
           files: |
             dist/*.exe
             dist/*.exe.blockmap
-            dist/latest.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
