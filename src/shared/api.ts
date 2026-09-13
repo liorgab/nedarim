@@ -217,6 +217,8 @@ export interface VowInputDto {
   occasionNote?: string | null;
   amountAgorot: number;
   notes?: string | null;
+  /** F-142 – הכיבוד שנבחר מרשימת הנדרים. `null` = הזנה חופשית. */
+  vowItemId?: number | null;
 }
 
 export interface BulkVowInputDto {
@@ -516,7 +518,14 @@ export interface BalanceApi {
 }
 
 export type ReportIdDto =
-  'debtors' | 'byOccasion' | 'donations' | 'expenses' | 'byPaymentMethod' | 'memberStatement';
+  | 'debtors'
+  | 'byOccasion'
+  /** F-84 – כיבודים ורוכשים: מה היה אמור להימכר בכל מועד, ומי קנה. */
+  | 'honors'
+  | 'donations'
+  | 'expenses'
+  | 'byPaymentMethod'
+  | 'memberStatement';
 
 export interface ReportColumnDto {
   key: string;
@@ -763,6 +772,61 @@ export interface BackupApi {
   /** F-104 – ייצוא מלא של כל הנתונים ל-Excel. */
   exportAll(): Promise<string | null>;
   openFolder(path: string): Promise<void>;
+}
+
+// ------------------------------------------------------------ רשימת נדרים
+
+export type VowItemScopeDto = 'shabbat' | 'occasion' | 'always';
+
+export interface VowItemDto {
+  id: number;
+  name: string;
+  category: string | null;
+  duration: string | null;
+  saleTiming: string | null;
+  performanceTiming: string | null;
+  scope: VowItemScopeDto;
+  notes: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  occasionIds: number[];
+  occasionNames: string[];
+}
+
+export interface VowItemInputDto {
+  name: string;
+  category?: string | null;
+  duration?: string | null;
+  saleTiming?: string | null;
+  performanceTiming?: string | null;
+  scope: VowItemScopeDto;
+  notes?: string | null;
+  sortOrder?: number;
+  isActive?: boolean;
+  occasionIds?: number[];
+}
+
+export interface VowItemFilterDto {
+  search?: string;
+  category?: string;
+  scope?: VowItemScopeDto;
+  /** רק כיבודים הרלוונטיים למועד הזה. */
+  occasionId?: number;
+  includeInactive?: boolean;
+}
+
+export interface VowItemsApi {
+  /** F-140 – הרשימה, מסוננת. בלי `occasionId` מוחזרת כל הרשימה. */
+  list(filter?: VowItemFilterDto): Promise<VowItemDto[]>;
+  /** הקטגוריות הקיימות בפועל, לסרגל הסינון. */
+  categories(): Promise<string[]>;
+  create(input: VowItemInputDto): Promise<VowItemDto>;
+  update(id: number, input: VowItemInputDto): Promise<VowItemDto>;
+  /**
+   * F-143 – מחיקה. כיבוד שכבר נמכר מכובה במקום להימחק, כדי שהנדר
+   * ההיסטורי לא יישאר בלי שם. התוצאה אומרת מה קרה בפועל.
+   */
+  remove(id: number): Promise<{ deleted: boolean; usedBy: number }>;
 }
 
 // ---------------------------------------------------------------- ייבוא נתונים
@@ -1404,6 +1468,7 @@ export interface NedarimApi {
   dashboard: DashboardApi;
   auth: AuthApi;
   backup: BackupApi;
+  vowItems: VowItemsApi;
   importer: ImportApi;
   danger: DangerApi;
   audit: AuditApi;
@@ -1537,6 +1602,12 @@ export const IPC_CHANNELS = {
   'backup:reminder': true,
   'backup:exportAll': true,
   'backup:openFolder': true,
+
+  'vowItems:list': true,
+  'vowItems:categories': true,
+  'vowItems:create': true,
+  'vowItems:update': true,
+  'vowItems:remove': true,
 
   'importer:catalog': true,
   'importer:modes': true,

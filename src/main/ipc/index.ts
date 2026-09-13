@@ -25,6 +25,8 @@ import type {
   ReportIdDto,
   ReportParamsDto,
   VowInputDto,
+  VowItemFilterDto,
+  VowItemInputDto,
 } from '@shared/api';
 import { IPC_CHANNELS } from '@shared/api';
 import type { IsoDate, MemberStatus, UserRole } from '@shared/types';
@@ -52,6 +54,13 @@ import {
 } from '../import/session';
 import { confirmationMatches, deleteDatabase, deletionScope } from '../services/dangerZone';
 import { findUninstaller, writeUninstallScript } from '../services/uninstall';
+import {
+  createVowItem,
+  deleteVowItem,
+  listVowItems,
+  updateVowItem,
+  vowItemCategories,
+} from '../services/vowItems';
 import {
   changeOwnPassword,
   createUser as createUserSvc,
@@ -684,6 +693,16 @@ const handlers: Record<IpcChannel, Handler> = {
   'backup:openFolder': ((path: string) => {
     shell.showItemInFolder(path);
   }) as Handler,
+
+  // ------------------------------------------------------- רשימת נדרים
+  'vowItems:list': ((filter?: VowItemFilterDto) =>
+    listVowItems(getDb(), filter ?? {})) as Handler,
+  'vowItems:categories': () => vowItemCategories(getDb()),
+  'vowItems:create': ((input: VowItemInputDto) =>
+    createVowItem(getDb(), input, actor().id)) as Handler,
+  'vowItems:update': ((id: number, input: VowItemInputDto) =>
+    updateVowItem(getDb(), id, input, actor().id)) as Handler,
+  'vowItems:remove': ((id: number) => deleteVowItem(getDb(), id, actor().id)) as Handler,
 
   // -------------------------------------------------------------- ייבוא
   'importer:catalog': () =>

@@ -1,6 +1,8 @@
 import type { Database } from 'better-sqlite3';
 import { nowIso } from '@shared/datetime';
 import { NOTIFY_EVENTS } from '../whatsapp/notifyEvents';
+import { decideScope } from '../services/vowItemScope';
+import { VOW_ITEMS } from './vow-items';
 import {
   COMBINED_PARASHIOT,
   CREDIT_REASONS,
@@ -19,6 +21,7 @@ import {
 
 export interface SeedResult {
   occasions: number;
+  vowItems: number;
   messageTemplates: number;
   paymentMethods: number;
   donationTypes: number;
@@ -35,6 +38,7 @@ export interface SeedResult {
 export function seed(db: Database): SeedResult {
   const result: SeedResult = {
     occasions: 0,
+    vowItems: 0,
     messageTemplates: 0,
     paymentMethods: 0,
     donationTypes: 0,
@@ -157,6 +161,52 @@ export function seed(db: Database): SeedResult {
         nowIso(),
         nowIso(),
       ).changes;
+    }
+
+    // F-140 – רשימת הנדרים למכירה.
+    //
+    // **פעם אחת בלבד**, בשונה משאר ה-seed. `INSERT OR IGNORE` היה מחזיר
+    // בהפעלה הבאה כל כיבוד שהגבאי מחק, והרשימה הזו נועדה להיערך: בית כנסת
+    // שאינו מוכר הקפות ימחק אותן, ואין שום סיבה להתווכח איתו מדי בוקר.
+    const seededAt = db
+      .prepare("SELECT value FROM setting WHERE key = 'vow_items_seeded_at'")
+      .get() as { value: string | null } | undefined;
+
+    if ((seededAt?.value ?? '') === '') {
+      const insItem = db.prepare(
+        `INSERT OR IGNORE INTO vow_item
+           (name, category, duration, sale_timing, performance_timing, scope, sort_order, is_active)
+         VALUES (@name, @category, @duration, @saleTiming, @performanceTiming, @scope, @sortOrder, 1)`,
+      );
+      const findOccasion = db.prepare('SELECT id FROM occasion WHERE name = ?');
+      const linkOccasion = db.prepare(
+        'INSERT OR IGNORE INTO vow_item_occasion (vow_item_id, occasion_id) VALUES (?, ?)',
+      );
+
+      let itemOrder = 0;
+      VOW_ITEMS.forEach((item) => {
+        const decision = decideScope(item);
+        const info = insItem.run({
+          name: item.name,
+          category: item.category,
+          duration: item.duration,
+          saleTiming: item.saleTiming,
+          performanceTiming: item.performanceTiming,
+          scope: decision.scope,
+          sortOrder: (itemOrder += 10),
+        });
+        result.vowItems += info.changes;
+        if (info.changes === 0) return;
+
+        for (const name of decision.occasions) {
+          const row = findOccasion.get(name) as { id: number } | undefined;
+          // מועד שאינו קיים מדולג בשקט: בדיקה מוודאת שזה לא קורה על
+          // הפנקס שנשלח, וגבאי שמחק מועד לא אמור לראות שגיאה בהפעלה.
+          if (row !== undefined) linkOccasion.run(Number(info.lastInsertRowid), row.id);
+        }
+      });
+
+      insSetting.run('vow_items_seeded_at', nowIso());
     }
 
     // משתמש admin ראשוני ללא סיסמה שמישה – הסיסמה נקבעת באשף ההפעלה הראשונה (שלב 4).

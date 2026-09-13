@@ -1,6 +1,7 @@
 import type { Database } from 'better-sqlite3';
 import type { IsoDate } from '@shared/types';
 import { resolveRange, type BalanceRange } from './balance';
+import { toHebrewDate } from './hebrewCalendar';
 import { nowIso } from '@shared/datetime';
 
 /**
@@ -34,7 +35,13 @@ export interface ReportResult {
 }
 
 export type ReportId =
-  'debtors' | 'byOccasion' | 'donations' | 'expenses' | 'byPaymentMethod' | 'memberStatement';
+  | 'debtors'
+  | 'byOccasion'
+  | 'honors'
+  | 'donations'
+  | 'expenses'
+  | 'byPaymentMethod'
+  | 'memberStatement';
 
 export interface ReportParams {
   range?: BalanceRange;
@@ -46,6 +53,7 @@ export interface ReportParams {
 export const REPORTS: ReadonlyArray<{ id: ReportId; title: string; needsMember?: boolean }> = [
   { id: 'debtors', title: 'יתרות חוב' },
   { id: 'byOccasion', title: 'נדרים לפי פרשה ואירוע' },
+  { id: 'honors', title: 'כיבודים ורוכשים' },
   { id: 'donations', title: 'תרומות' },
   { id: 'expenses', title: 'הוצאות' },
   { id: 'byPaymentMethod', title: 'תקבולים לפי אמצעי תשלום' },
@@ -165,6 +173,163 @@ function byOccasionReport(db: Database, from: IsoDate | null, to: IsoDate | null
     ],
     generatedAt: now(),
   };
+}
+
+/**
+ * F-84 – כיבודים ורוכשים.
+ *
+ * זה **פנקס הגבאי עצמו**: לכל יום שבו נרשמו נדרים, כל הכיבודים שאמורים
+ * להימכר באותו מועד, ומי קנה כל אחד מהם. כיבוד שלא נמכר מופיע עם שורה
+ * ריקה – וזו כל הנקודה: דוח שמראה רק את מה שנמכר אינו עונה על "מה פספסנו".
+ *
+ * שלושה מקורות לשורות, וכולם נדרשים:
+ * 1. הקטלוג של אותו מועד – מה היה אמור להימכר.
+ * 2. נדרים שקושרו לכיבוד – מי קנה ובכמה.
+ * 3. נדרים **שלא** קושרו לכיבוד מהרשימה. בלעדיהם הדוח היה מסתיר כסף
+ *    אמיתי: כל הנדרים שנרשמו לפני שהרשימה קיימת, וכל הזנה חופשית.
+ */
+function honorsReport(db: Database, from: IsoDate | null, to: IsoDate | null): ReportResult {
+  const clause = rangeClause('c.charge_date', from, to);
+
+  // הימים שבהם הייתה פעילות. הדוח אינו פורש את כל לוח השנה: 52 שבתות
+  // כפול 20 כיבודים הם 1,040 שורות ריקות שאיש לא יקרא.
+  const days = db
+    .prepare(
+      `SELECT DISTINCT c.charge_date AS date, c.occasion_id AS occasion_id, o.name AS occasion
+         FROM vow_charge c JOIN occasion o ON o.id = c.occasion_id
+        WHERE c.deleted_at IS NULL AND c.kind = 'vow'${clause.sql}
+        ORDER BY c.charge_date DESC, o.name`,
+    )
+    .all(clause.params) as Array<{ date: string; occasion_id: number; occasion: string }>;
+
+  const catalog = db.prepare(
+    `SELECT i.id, i.name, i.sort_order
+       FROM vow_item i
+      WHERE i.is_active = 1
+        AND (i.scope = 'always'
+             OR (i.scope = 'shabbat' AND (SELECT type FROM occasion WHERE id = @occasionId) = 'parasha')
+             OR (i.scope = 'occasion'
+                 AND EXISTS (SELECT 1 FROM vow_item_occasion l
+                              WHERE l.vow_item_id = i.id AND l.occasion_id = @occasionId)))
+      ORDER BY i.sort_order, i.name`,
+  );
+
+  const soldForItem = db.prepare(
+    `SELECT m.first_name || ' ' || m.last_name AS buyer, c.amount_agorot AS amount, c.occasion_note AS note
+       FROM vow_charge c JOIN member m ON m.id = c.member_id
+      WHERE c.deleted_at IS NULL AND c.kind = 'vow'
+        AND c.charge_date = @date AND c.occasion_id = @occasionId AND c.vow_item_id = @itemId
+      ORDER BY c.id`,
+  );
+
+  const unlinked = db.prepare(
+    `SELECT m.first_name || ' ' || m.last_name AS buyer, c.amount_agorot AS amount,
+            c.occasion_note AS note
+       FROM vow_charge c JOIN member m ON m.id = c.member_id
+      WHERE c.deleted_at IS NULL AND c.kind = 'vow'
+        AND c.charge_date = @date AND c.occasion_id = @occasionId AND c.vow_item_id IS NULL
+      ORDER BY c.id`,
+  );
+
+  const rows: Array<Record<string, ReportCell>> = [];
+  let sold = 0;
+  let unsold = 0;
+  let total = 0;
+
+  for (const day of days) {
+    const hebrew = safeHebrewDate(day.date);
+    const items = catalog.all({ occasionId: day.occasion_id }) as Array<{
+      id: number;
+      name: string;
+    }>;
+
+    for (const item of items) {
+      const buyers = soldForItem.all({
+        date: day.date,
+        occasionId: day.occasion_id,
+        itemId: item.id,
+      }) as Array<{ buyer: string; amount: number; note: string | null }>;
+
+      if (buyers.length === 0) {
+        unsold += 1;
+        rows.push({
+          date: day.date,
+          hebrewDate: hebrew,
+          occasion: day.occasion,
+          honor: item.name,
+          buyer: null,
+          amount: null,
+        });
+        continue;
+      }
+
+      // כיבוד שנמכר ליותר מאדם אחד (שותפות) מקבל שורה לכל רוכש.
+      for (const b of buyers) {
+        sold += 1;
+        total += b.amount;
+        rows.push({
+          date: day.date,
+          hebrewDate: hebrew,
+          occasion: day.occasion,
+          honor: item.name,
+          buyer: b.buyer,
+          amount: b.amount,
+        });
+      }
+    }
+
+    for (const b of unlinked.all({ date: day.date, occasionId: day.occasion_id }) as Array<{
+      buyer: string;
+      amount: number;
+      note: string | null;
+    }>) {
+      sold += 1;
+      total += b.amount;
+      rows.push({
+        date: day.date,
+        hebrewDate: hebrew,
+        occasion: day.occasion,
+        // אין כיבוד מהרשימה; הפירוט החופשי הוא מה שהגבאי כתב.
+        honor: b.note === null || b.note.trim() === '' ? 'ללא שיוך לכיבוד' : b.note,
+        buyer: b.buyer,
+        amount: b.amount,
+      });
+    }
+  }
+
+  return {
+    id: 'honors',
+    title: 'כיבודים ורוכשים',
+    subtitle: 'כל הכיבודים שאמורים להימכר בכל מועד, ומי קנה. שורה ריקה = לא נמכר',
+    columns: [
+      { key: 'date', label: 'תאריך', format: 'date' },
+      { key: 'hebrewDate', label: 'תאריך עברי', format: 'text' },
+      { key: 'occasion', label: 'פרשה / חג', format: 'text' },
+      { key: 'honor', label: 'כיבוד', format: 'text' },
+      { key: 'buyer', label: 'רוכש', format: 'text' },
+      { key: 'amount', label: 'סכום', format: 'money', align: 'end' },
+    ],
+    rows,
+    totals: { date: 'סה״כ', honor: `${sold} נמכרו`, amount: total },
+    kpis: [
+      { key: 'sold', label: 'כיבודים שנמכרו', value: sold, format: 'number' },
+      { key: 'unsold', label: 'לא נמכרו', value: unsold, format: 'number' },
+      { key: 'total', label: 'סה״כ', value: total, format: 'money' },
+    ],
+    generatedAt: now(),
+  };
+}
+
+/**
+ * תאריך עברי שלא מפיל דוח. אותה גישה כמו ב-`ledger.ts`: תאריך פגום בשורה
+ * אחת לא אמור למנוע את הדפסת הדוח כולו.
+ */
+function safeHebrewDate(iso: IsoDate): string {
+  try {
+    return toHebrewDate(iso);
+  } catch {
+    return '';
+  }
 }
 
 /** F-83 – תרומות לפי סוג ותורם. */
@@ -374,6 +539,8 @@ export function runReport(db: Database, id: ReportId, params: ReportParams = {})
       return withRange(debtorsReport(db, params));
     case 'byOccasion':
       return withRange(byOccasionReport(db, resolved.from, resolved.to));
+    case 'honors':
+      return withRange(honorsReport(db, resolved.from, resolved.to));
     case 'donations':
       return withRange(donationsReport(db, resolved.from, resolved.to));
     case 'expenses':

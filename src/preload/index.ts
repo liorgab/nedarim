@@ -164,6 +164,13 @@ const api: NedarimApi = {
     exportAll: () => invoke('backup:exportAll'),
     openFolder: (path) => invoke('backup:openFolder', path),
   },
+  vowItems: {
+    list: (filter) => invoke('vowItems:list', filter),
+    categories: () => invoke('vowItems:categories'),
+    create: (input) => invoke('vowItems:create', input),
+    update: (id, input) => invoke('vowItems:update', id, input),
+    remove: (id) => invoke('vowItems:remove', id),
+  },
   importer: {
     catalog: () => invoke('importer:catalog'),
     modes: () => invoke('importer:modes'),

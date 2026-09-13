@@ -19,6 +19,8 @@ export const MAX_FUTURE_DAYS = 7;
 export const MAX_AMOUNT_AGOROT = 100_000_000; // 1,000,000 ₪
 
 export interface VowInput {
+  /** F-142 – הכיבוד שנבחר מרשימת הנדרים. `null` = הזנה חופשית. */
+  vowItemId?: number | null;
   memberId: number;
   chargeDate: IsoDate;
   occasionId: number;
@@ -93,8 +95,8 @@ export function createVow(db: Database, input: VowInput, userId: number): number
     const info = db
       .prepare(
         `INSERT INTO vow_charge (member_id, charge_date, occasion_id, occasion_note,
-           amount_agorot, kind, notes, created_at, updated_at, created_by)
-         VALUES (?, ?, ?, ?, ?, 'vow', ?, ?, ?, ?)`,
+           amount_agorot, kind, notes, vow_item_id, created_at, updated_at, created_by)
+         VALUES (?, ?, ?, ?, ?, 'vow', ?, ?, ?, ?, ?)`,
       )
       .run(
         input.memberId,
@@ -103,6 +105,10 @@ export function createVow(db: Database, input: VowInput, userId: number): number
         input.occasionNote?.trim() || null,
         input.amountAgorot,
         input.notes?.trim() || null,
+        // F-142 – הכיבוד שנבחר מהרשימה. נשמר כמזהה ולא רק כטקסט, אחרת
+        // אי אפשר לשאול "כמה הכניסה עליית שלישי השנה" – השאלה הבסיסית
+        // ביותר על פנקס הגבאי.
+        input.vowItemId ?? null,
         ts,
         ts,
         userId,

@@ -33,6 +33,7 @@ import type {
 } from '@shared/api';
 import { BackupTab } from './BackupTab';
 import { DataTab } from './DataTab';
+import { VowItemsTab } from './VowItemsTab';
 import { UsersTab } from './UsersTab';
 import { useAsync } from '../hooks/useAsync';
 import { he } from '../i18n/he';
@@ -71,12 +72,21 @@ const LOOKUP_TABS: ReadonlyArray<{ id: LookupTableDto; label: string }> = [
  * השדות נבנים מתוך `specs` שמגיע מה-main, ולא מקוד קשיח כאן – הוספת הגדרה
  * חדשה בשרת מופיעה במסך מאליה (CLAUDE.md כלל 12).
  */
-type SettingsTab = 'settings' | 'counters' | 'lookups' | 'users' | 'backup' | 'data' | 'about';
+type SettingsTab =
+  | 'settings'
+  | 'counters'
+  | 'lookups'
+  | 'vowItems'
+  | 'users'
+  | 'backup'
+  | 'data'
+  | 'about';
 
 const SETTINGS_TABS: readonly SettingsTab[] = [
   'settings',
   'counters',
   'lookups',
+  'vowItems',
   'users',
   'backup',
   'data',
@@ -169,6 +179,7 @@ export function SettingsPage({ onNotify, onChanged, session, initialTab }: Setti
         <Tab value="settings" label={he.settings.tabs.settings} />
         <Tab value="counters" label={he.settings.tabs.counters} />
         <Tab value="lookups" label={he.settings.tabs.lookups} />
+        <Tab value="vowItems" label={he.vowItems.tab} />
         <Tab value="users" label={he.auth.users} />
         <Tab value="backup" label={he.backup.title} />
         <Tab value="data" label={he.settings.tabs.data} />
@@ -213,6 +224,8 @@ export function SettingsPage({ onNotify, onChanged, session, initialTab }: Setti
         ) : null}
 
         {tab === 'lookups' ? <LookupsTab onNotify={onNotify} /> : null}
+
+        {tab === 'vowItems' ? <VowItemsTab onNotify={onNotify} /> : null}
 
         {tab === 'users' ? <UsersTab session={session} onNotify={onNotify} /> : null}
 

@@ -23,10 +23,11 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { MemberWithBalance } from '@shared/types';
 import { MemberPicker } from '../MemberPicker';
 import { OccasionPicker } from '../OccasionPicker';
+import { VowItemPicker } from '../VowItemPicker';
 import { useAsync } from '../../hooks/useAsync';
 import { formatAgorot, parseShekelInput, shekelToAgorot, todayIso } from '../../lib/format';
 import { he } from '../../i18n/he';
-import type { NotifyRefDto } from '@shared/api';
+import type { NotifyRefDto, VowItemDto } from '@shared/api';
 
 export interface VowDialogProps {
   open: boolean;
@@ -62,6 +63,7 @@ export function VowDialog({ open, mode, member, onClose, onSaved }: VowDialogPro
   const [selected, setSelected] = useState<MemberWithBalance | null>(member ?? null);
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
+  const [vowItem, setVowItem] = useState<VowItemDto | null>(null);
   const [lines, setLines] = useState<BulkLine[]>([newLine(), newLine(), newLine()]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -89,6 +91,7 @@ export function VowDialog({ open, mode, member, onClose, onSaved }: VowDialogPro
       setSelected(member ?? null);
       setAmount('');
       setNote('');
+      setVowItem(null);
       setLines([newLine(), newLine(), newLine()]);
       setError(null);
     }
@@ -120,6 +123,7 @@ export function VowDialog({ open, mode, member, onClose, onSaved }: VowDialogPro
           occasionId,
           occasionNote: note.trim() || null,
           amountAgorot: shekelToAgorot(value),
+          vowItemId: vowItem?.id ?? null,
         });
         const updated = await window.api.members.get(selected.id);
         onSaved(he.vow.saved(formatAgorot(updated?.balanceAgorot ?? 0)), {
@@ -188,6 +192,19 @@ export function VowDialog({ open, mode, member, onClose, onSaved }: VowDialogPro
                   {he.payment.currentBalance}: {formatAgorot(selected.balanceAgorot)}
                 </Typography>
               ) : null}
+              {/*
+                F-142 – בחירת הכיבוד מהרשימה. הבחירה ממלאת את הפירוט, אבל
+                אינה נועלת אותו: יש כיבודים שנמכרים עם תוספת ("עליית שלישי
+                – לרפואת..."), והקלדה חופשית חייבת להישאר אפשרית.
+              */}
+              <VowItemPicker
+                occasionId={occasionId}
+                value={vowItem}
+                onChange={(item) => {
+                  setVowItem(item);
+                  if (item !== null) setNote(item.name);
+                }}
+              />
               <Stack direction="row" spacing={2}>
                 <TextField
                   label={he.vow.amount}

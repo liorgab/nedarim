@@ -102,6 +102,8 @@ describe('seed', () => {
     expect(count('expense_category')).toBe(7);
     expect(count('user')).toBe(1);
     expect(count('sequence')).toBe(4);
+    // F-140 – 103 הכיבודים מפנקס הגבאי.
+    expect(count('vow_item')).toBe(103);
   });
 
   it('אידמפוטנטי – הרצה שנייה לא מוסיפה כלום', () => {
@@ -109,6 +111,9 @@ describe('seed', () => {
     const second = seed(db);
     expect(second).toEqual({
       occasions: 0,
+      // רשימת הנדרים נזרעת פעם אחת בלבד ולכן גם היא 0 – זה מה שמונע
+      // מכיבוד שהגבאי מחק לחזור בהפעלה הבאה.
+      vowItems: 0,
       messageTemplates: 0,
       paymentMethods: 0,
       donationTypes: 0,
