@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   Alert,
   Box,
@@ -21,6 +21,8 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import FilterAltOffIcon from '@mui/icons-material/FilterAltOff';
 import type { VowItemDto, VowItemScopeDto } from '@shared/api';
 import type { Occasion } from '@shared/types';
 import { DataTable, type Column } from '../components/DataTable';
@@ -76,6 +78,8 @@ export function VowItemsTab({ onNotify }: VowItemsTabProps) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [occasionId, setOccasionId] = useState<number | ''>('');
+  /** סינון רשימת המועדים עצמה: 54 פרשות מקשות למצוא חג. */
+  const [occasionKind, setOccasionKind] = useState<'all' | 'parasha' | 'holiday' | 'event'>('all');
   const [includeInactive, setIncludeInactive] = useState(false);
   const [draft, setDraft] = useState<VowItemDraft | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<VowItemDto | null>(null);
@@ -95,6 +99,17 @@ export function VowItemsTab({ onNotify }: VowItemsTabProps) {
   const occasions = useAsync(() => window.api.lookups.occasions(), []);
 
   const rows = items.data ?? [];
+
+  const filtered =
+    search !== '' || category !== '' || occasionId !== '' || occasionKind !== 'all' || includeInactive;
+
+  const clearFilters = () => {
+    setSearch('');
+    setCategory('');
+    setOccasionId('');
+    setOccasionKind('all');
+    setIncludeInactive(false);
+  };
 
   async function run(fn: () => Promise<void>): Promise<void> {
     setError(null);
@@ -129,6 +144,30 @@ export function VowItemsTab({ onNotify }: VowItemsTabProps) {
       setDraft(null);
     });
 
+  /**
+   * F-143 – שכפול כיבוד.
+   *
+   * שבעת ההקפות נבדלות זו מזו במילה אחת, וכך גם עליות החג בין יום א'
+   * ליום ב'. הקלדת כל השדות מחדש בשביל שינוי אחד היא בדיוק מה שגורם
+   * לגבאי לוותר ולהשאיר את הרשימה חלקית.
+   */
+  const duplicate = (item: VowItemDto) =>
+    void run(async () => {
+      const name = he.vowItems.copySuffix(item.name);
+      await window.api.vowItems.create({
+        name,
+        category: item.category,
+        duration: item.duration,
+        saleTiming: item.saleTiming,
+        performanceTiming: item.performanceTiming,
+        scope: item.scope,
+        notes: item.notes,
+        isActive: item.isActive,
+        occasionIds: item.occasionIds,
+      });
+      onNotify(he.vowItems.duplicated(name));
+    });
+
   const remove = (item: VowItemDto) =>
     void run(async () => {
       const result = await window.api.vowItems.remove(item.id);
@@ -138,8 +177,10 @@ export function VowItemsTab({ onNotify }: VowItemsTabProps) {
       setConfirmDelete(null);
     });
 
-  const columns = useMemo<Array<Column<VowItemDto>>>(
-    () => [
+  // בלי `useMemo`: הגדרות העמודות סוגרות על `duplicate` ועל `remove`,
+  // ושמירתן בין רינדורים הייתה מקפיאה גרסה ישנה שלהן. 103 שורות אינן
+  // סיבה לסכן פעולה שפועלת על נתון מיושן.
+  const columns: Array<Column<VowItemDto>> = [
       {
         id: 'name',
         label: he.vowItems.name,
@@ -187,7 +228,7 @@ export function VowItemsTab({ onNotify }: VowItemsTabProps) {
       {
         id: 'actions',
         label: '',
-        width: 110,
+        width: 150,
         render: (r) => (
           <Stack direction="row" spacing={0.5}>
             <Tooltip title={he.vowItems.edit}>
@@ -212,6 +253,15 @@ export function VowItemsTab({ onNotify }: VowItemsTabProps) {
                 <EditIcon fontSize="small" />
               </IconButton>
             </Tooltip>
+            <Tooltip title={he.vowItems.duplicate}>
+              <IconButton
+                size="small"
+                aria-label={he.vowItems.duplicate}
+                onClick={() => duplicate(r)}
+              >
+                <ContentCopyIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
             <Tooltip title={he.vowItems.remove}>
               <IconButton
                 size="small"
@@ -225,9 +275,7 @@ export function VowItemsTab({ onNotify }: VowItemsTabProps) {
           </Stack>
         ),
       },
-    ],
-    [],
-  );
+  ];
 
   return (
     <Stack spacing={2}>
@@ -268,17 +316,37 @@ export function VowItemsTab({ onNotify }: VowItemsTabProps) {
           <TextField
             select
             size="small"
+            label={he.vowItems.occasionKind}
+            value={occasionKind}
+            onChange={(e) => {
+              setOccasionKind(e.target.value as typeof occasionKind);
+              // המועד שנבחר עשוי לא להיות ברשימה החדשה, ובחירה שאי אפשר
+              // לראות היא בדיוק סינון שנראה שבור.
+              setOccasionId('');
+            }}
+            sx={{ minWidth: 150 }}
+          >
+            <MenuItem value="all">{he.vowItems.occasionKinds.all}</MenuItem>
+            <MenuItem value="holiday">{he.vowItems.occasionKinds.holiday}</MenuItem>
+            <MenuItem value="parasha">{he.vowItems.occasionKinds.parasha}</MenuItem>
+            <MenuItem value="event">{he.vowItems.occasionKinds.event}</MenuItem>
+          </TextField>
+          <TextField
+            select
+            size="small"
             label={he.vowItems.filterByOccasion}
             value={occasionId === '' ? '' : String(occasionId)}
             onChange={(e) => setOccasionId(e.target.value === '' ? '' : Number(e.target.value))}
             sx={{ minWidth: 200 }}
           >
             <MenuItem value="">{he.vowItems.all}</MenuItem>
-            {(occasions.data ?? []).map((o: Occasion) => (
-              <MenuItem key={o.id} value={String(o.id)}>
-                {o.name}
-              </MenuItem>
-            ))}
+            {(occasions.data ?? [])
+              .filter((o: Occasion) => occasionKind === 'all' || o.type === occasionKind)
+              .map((o: Occasion) => (
+                <MenuItem key={o.id} value={String(o.id)}>
+                  {o.name}
+                </MenuItem>
+              ))}
           </TextField>
           <FormControlLabel
             control={
@@ -290,6 +358,18 @@ export function VowItemsTab({ onNotify }: VowItemsTabProps) {
             }
             label={he.vowItems.showInactive}
           />
+          <Tooltip title={he.vowItems.clearFilter}>
+            <span>
+              <IconButton
+                aria-label={he.vowItems.clearFilter}
+                size="small"
+                disabled={!filtered}
+                onClick={clearFilters}
+              >
+                <FilterAltOffIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
           <Box sx={{ flex: 1 }} />
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDraft(emptyDraft())}>
             {he.vowItems.add}
@@ -316,6 +396,26 @@ export function VowItemsTab({ onNotify }: VowItemsTabProps) {
         occasions={occasions.data ?? []}
         onClose={() => setDraft(null)}
         onSave={save}
+        onDuplicate={(d) =>
+          void run(async () => {
+            // משכפלים את מה שמוצג בדיאלוג, כולל שינויים שטרם נשמרו:
+            // הגבאי פתח כיבוד, שינה מילה, ורוצה שהעותק ייקח את השינוי.
+            const name = he.vowItems.copySuffix(d.name);
+            await window.api.vowItems.create({
+              name,
+              category: d.category || null,
+              duration: d.duration || null,
+              saleTiming: d.saleTiming || null,
+              performanceTiming: d.performanceTiming || null,
+              scope: d.scope,
+              notes: d.notes || null,
+              isActive: d.isActive,
+              occasionIds: d.scope === 'occasion' ? d.occasionIds : [],
+            });
+            onNotify(he.vowItems.duplicated(name));
+            setDraft(null);
+          })
+        }
       />
 
       <Dialog open={confirmDelete !== null} onClose={() => setConfirmDelete(null)}>
@@ -343,11 +443,13 @@ function VowItemDialog({
   occasions,
   onClose,
   onSave,
+  onDuplicate,
 }: {
   draft: VowItemDraft | null;
   occasions: Occasion[];
   onClose: () => void;
   onSave: (draft: VowItemDraft) => void;
+  onDuplicate: (draft: VowItemDraft) => void;
 }) {
   const [local, setLocal] = useState<VowItemDraft>(emptyDraft());
   const [key, setKey] = useState<number | null | undefined>(undefined);
@@ -463,6 +565,20 @@ function VowItemDialog({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>{he.app.cancel}</Button>
+        <Box sx={{ flex: 1 }} />
+        {/*
+          שכפול קיים רק בעריכה: על כיבוד חדש שטרם נשמר אין מה לשכפל.
+          שבעת ההקפות נבדלות במילה אחת, וכך גם עליות יום א' ויום ב' של חג.
+        */}
+        {local.id === null ? null : (
+          <Button
+            startIcon={<ContentCopyIcon />}
+            onClick={() => onDuplicate(local)}
+            disabled={local.name.trim() === ''}
+          >
+            {he.vowItems.duplicate}
+          </Button>
+        )}
         <Button variant="contained" onClick={() => onSave(local)} disabled={local.name.trim() === ''}>
           {he.app.save}
         </Button>

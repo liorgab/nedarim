@@ -24,6 +24,7 @@ import { FilterBar } from '../components/FilterBar';
 import { KpiPanel, type Kpi } from '../components/KpiPanel';
 import { MemberDialog } from '../components/dialogs/MemberDialog';
 import { SendWizardDialog } from '../components/whatsapp/SendWizardDialog';
+import { SendOneDialog } from '../components/whatsapp/SendOneDialog';
 import { useAsync } from '../hooks/useAsync';
 import {
   balanceColor,
@@ -47,6 +48,8 @@ export function MembersPage({ onOpenCard, onNotify }: MembersPageProps) {
   const [onlyWithBalance, setOnlyWithBalance] = useState(false);
   const [minBalance, setMinBalance] = useState('');
   const [mobileStatus, setMobileStatus] = useState<'all' | 'valid' | 'not_valid'>('all');
+  /** W-22 – החבר שאליו נשלחת הודעה מהלחיצה על הנייד. */
+  const [sendTo, setSendTo] = useState<MemberWithBalance | null>(null);
   const [selected, setSelected] = useState<Set<string | number>>(new Set());
   const [wizardOpen, setWizardOpen] = useState(false);
 
@@ -163,7 +166,7 @@ export function MembersPage({ onOpenCard, onNotify }: MembersPageProps) {
         label: he.members.mobile,
         width: 170,
         sortValue: (r) => r.mobile,
-        render: (r) => <MobileCell member={r} />,
+        render: (r) => <MobileCell member={r} onSend={() => setSendTo(r)} />,
       },
       {
         id: 'balance',
@@ -394,6 +397,16 @@ export function MembersPage({ onOpenCard, onNotify }: MembersPageProps) {
         }
       />
 
+      <SendOneDialog
+        open={sendTo !== null}
+        member={sendTo}
+        onClose={() => setSendTo(null)}
+        onSent={(message) => {
+          setSendTo(null);
+          onNotify(message);
+        }}
+      />
+
       <SendWizardDialog
         open={wizardOpen}
         memberIds={[...selected].map(Number)}
@@ -422,26 +435,36 @@ export function MembersPage({ onOpenCard, onNotify }: MembersPageProps) {
  * המספר מוצג כפי שהוזן; האייקון והצבע אומרים אם אפשר לשלוח אליו, ו-tooltip
  * מסביר למה לא.
  */
-function MobileCell({ member }: { member: MemberWithBalance }) {
+function MobileCell({
+  member,
+  onSend,
+}: {
+  member: MemberWithBalance;
+  onSend: () => void;
+}) {
   const reason =
     member.mobileReason !== null
       ? (he.whatsapp.mobile.reasons as Record<string, string>)[member.mobileReason]
       : undefined;
 
   if (member.mobileStatus === 'valid') {
-    const title = reason ?? he.whatsapp.mobile.willSendTo(member.mobileE164 ?? '');
+    // מספר תקין הוא **כפתור**: הלחיצה הטבעית ביותר על מספר טלפון היא
+    // "לשלוח לו הודעה", ולא "לפתוח את הכרטיסייה" – שזה מה שקרה עד היום
+    // כי התא היה טקסט בתוך שורה שכולה ניתנת ללחיצה.
     return (
-      <Tooltip title={title}>
-        <Stack direction="row" spacing={0.5} alignItems="center">
-          <CheckCircleOutlineIcon
-            fontSize="small"
-            color={reason ? 'warning' : 'success'}
-            sx={{ fontSize: 16 }}
-          />
+      <Tooltip title={he.whatsapp.mobile.sendTo(memberFullName(member))}>
+        <Button
+          size="small"
+          variant="text"
+          color="inherit"
+          onClick={onSend}
+          startIcon={<WhatsAppIcon fontSize="small" color="success" />}
+          sx={{ minWidth: 0, px: 0.5, fontWeight: 400, textTransform: 'none' }}
+        >
           <span dir="ltr" style={{ display: 'inline-block' }}>
             {member.mobile ?? '—'}
           </span>
-        </Stack>
+        </Button>
       </Tooltip>
     );
   }

@@ -269,7 +269,26 @@ export function DataTable<TRow>({
                   <TableRow
                     key={rowKey(row)}
                     hover={Boolean(onRowClick)}
-                    onClick={onRowClick ? () => onRowClick(row) : undefined}
+                    onClick={
+                      onRowClick
+                        ? (event) => {
+                            // לחיצה על כפתור, קישור או תיבת סימון בתוך השורה
+                            // היא **פעולה בפני עצמה**, ולא בחירת השורה. בלי
+                            // הבדיקה הזו כל לחיצה על אייקון "עריכה" פתחה גם
+                            // את הדיאלוג וגם את הכרטיסייה – והניווט ניצח, כך
+                            // שהעריכה מעולם לא נראתה.
+                            const target = event.target as HTMLElement;
+                            if (
+                              target.closest(
+                                'button, a, input, textarea, [role="button"], [role="checkbox"], [role="combobox"]',
+                              ) !== null
+                            ) {
+                              return;
+                            }
+                            onRowClick(row);
+                          }
+                        : undefined
+                    }
                     sx={onRowClick ? { cursor: 'pointer' } : undefined}
                   >
                     {selection ? (
