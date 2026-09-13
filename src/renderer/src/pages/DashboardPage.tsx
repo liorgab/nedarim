@@ -15,6 +15,7 @@ import {
   Typography,
 } from '@mui/material';
 import PostAddIcon from '@mui/icons-material/PostAdd';
+import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import PaymentsIcon from '@mui/icons-material/Payments';
 import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
 import ReceiptIcon from '@mui/icons-material/Receipt';
@@ -28,6 +29,7 @@ export interface DashboardPageProps {
   onOpenMember: (memberId: number) => void;
   onGoTo: (view: 'members' | 'donations' | 'expenses' | 'pending') => void;
   onNewVow: () => void;
+  onNewBulkVow: () => void;
   onNewPayment: () => void;
   reloadToken: number;
 }
@@ -72,6 +74,7 @@ export function DashboardPage({
   onOpenMember,
   onGoTo,
   onNewVow,
+  onNewBulkVow,
   onNewPayment,
   reloadToken,
 }: DashboardPageProps) {
@@ -149,6 +152,14 @@ export function DashboardPage({
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               <Button variant="contained" startIcon={<PostAddIcon />} onClick={onNewVow}>
                 {he.card.actions.newVow}
+              </Button>
+              {/*
+                הזנה מרובה היא **הפעולה של מוצאי שבת** – שורה לכל חבר עם
+                תאריך ופרשה משותפים. עד היום היא הייתה נגישה רק מכרטיסיית
+                חבר, שזה בדיוק המקום הלא נכון: היא אינה פעולה על חבר אחד.
+              */}
+              <Button startIcon={<PlaylistAddIcon />} onClick={onNewBulkVow}>
+                {he.card.actions.bulkVow}
               </Button>
               <Button
                 variant="contained"

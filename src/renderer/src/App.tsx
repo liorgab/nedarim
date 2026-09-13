@@ -97,7 +97,7 @@ export default function App() {
   const [view, setView] = useState<View>(viewFromHash);
   const [notice, setNotice] = useState<string | null>(null);
   const [receiptId, setReceiptId] = useState<number | null>(null);
-  const [dialog, setDialog] = useState<'vow' | 'payment' | null>(null);
+  const [dialog, setDialog] = useState<'vow' | 'bulkVow' | 'payment' | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
   const [session, setSession] = useState<SessionDto | null>(null);
@@ -331,6 +331,7 @@ export default function App() {
             onOpenMember={openMemberById}
             onGoTo={(v) => setView({ name: v })}
             onNewVow={() => setDialog('vow')}
+            onNewBulkVow={() => setDialog('bulkVow')}
             onNewPayment={() => setDialog('payment')}
           />
         ) : null}
@@ -404,8 +405,8 @@ export default function App() {
       />
 
       <VowDialog
-        open={dialog === 'vow'}
-        mode="single"
+        open={dialog === 'vow' || dialog === 'bulkVow'}
+        mode={dialog === 'bulkVow' ? 'bulk' : 'single'}
         onClose={() => setDialog(null)}
         onSaved={(msg) => {
           setNotice(msg);
