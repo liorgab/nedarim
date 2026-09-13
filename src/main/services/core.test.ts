@@ -8,6 +8,7 @@ import { seed, systemUserId } from '../db/seed';
 import { createMember, listMembers, mergeMembers, setMemberStatus, topDebtors } from './members';
 import { getLedger, paymentsWithoutReceipt, recentCharges } from './ledger';
 import { createCredit, createVow, createVowsBulk, deleteVowCharge, validateVow } from './vows';
+import { listVowItems } from './vowItems';
 import { createPayment, createPaymentsBulk, deletePayment, validatePayment } from './payments';
 import {
   cancelReceipt,
@@ -233,6 +234,50 @@ describe('הזנת נדר (F-30..F-34)', () => {
     expect(res.ids).toHaveLength(2);
     expect(res.totalAgorot).toBe(8_600);
     expect(getLedger(db, a.id).rows[0]!.note).toBe('הבן');
+  });
+
+  it('הזנה מרובה שומרת את הכיבוד שנבחר בכל שורה (F-142)', () => {
+    // בלי זה דוח הכיבודים היה מציג את כל ההזנה המרובה כ"ללא שיוך",
+    // וזו בדיוק ההזנה שבה נמכרים רוב הכיבודים – מוצאי שבת.
+    const a = member('א', 'א');
+    const b = member('ב', 'ב');
+    const items = listVowItems(db, { occasionId });
+    const first = items[0]!;
+    const second = items[1]!;
+
+    const res = createVowsBulk(
+      db,
+      {
+        chargeDate: '2026-01-10',
+        occasionId,
+        lines: [
+          { memberId: a.id, amountAgorot: 5_000, vowItemId: first.id },
+          { memberId: b.id, amountAgorot: 3_600, vowItemId: second.id },
+        ],
+      },
+      userId,
+    );
+
+    const saved = res.ids.map(
+      (id) =>
+        (db.prepare('SELECT vow_item_id AS v FROM vow_charge WHERE id = ?').get(id) as {
+          v: number | null;
+        }).v,
+    );
+    expect(saved).toEqual([first.id, second.id]);
+  });
+
+  it('הזנה מרובה בלי כיבוד נשמרת כרגיל', () => {
+    const a = member('א', 'א');
+    const res = createVowsBulk(
+      db,
+      { chargeDate: '2026-01-10', occasionId, lines: [{ memberId: a.id, amountAgorot: 1_000 }] },
+      userId,
+    );
+    const row = db
+      .prepare('SELECT vow_item_id AS v FROM vow_charge WHERE id = ?')
+      .get(res.ids[0]) as { v: number | null };
+    expect(row.v).toBeNull();
   });
 
   it('הזנה מרובה עם שורה פסולה לא שומרת כלום', () => {

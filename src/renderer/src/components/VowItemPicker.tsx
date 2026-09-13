@@ -28,10 +28,28 @@ export interface VowItemPickerProps {
   value: VowItemDto | null;
   onChange: (item: VowItemDto | null) => void;
   disabled?: boolean;
+  /**
+   * מצב טבלה: רק הקומבובוקס, בלי המתג ובלי המונה.
+   *
+   * בהזנה מרובה יש שורה לכל חבר, ומתג נפרד בכל שורה היה גם רועש וגם
+   * מטעה – הבחירה "כל הרשימה" היא החלטה אחת לכל הטבלה.
+   */
+  dense?: boolean;
+  /** במצב `dense` – האם להציג את כל הרשימה. נשלט מבחוץ. */
+  showAll?: boolean;
 }
 
-export function VowItemPicker({ occasionId, value, onChange, disabled }: VowItemPickerProps) {
-  const [all, setAll] = useState(false);
+export function VowItemPicker({
+  occasionId,
+  value,
+  onChange,
+  disabled,
+  dense = false,
+  showAll = false,
+}: VowItemPickerProps) {
+  const [ownAll, setOwnAll] = useState(false);
+  const all = dense ? showAll : ownAll;
+  const setAll = setOwnAll;
   const [items, setItems] = useState<VowItemDto[]>([]);
   const [input, setInput] = useState('');
 
@@ -52,8 +70,9 @@ export function VowItemPicker({ occasionId, value, onChange, disabled }: VowItem
     value !== null && !items.some((i) => i.id === value.id) ? [value, ...items] : items;
 
   return (
-    <Stack spacing={0.5} sx={{ flex: 1, minWidth: 260 }}>
+    <Stack spacing={0.5} sx={dense ? undefined : { flex: 1, minWidth: 260 }}>
       <Autocomplete
+        size={dense ? 'small' : 'medium'}
         options={options}
         value={value}
         onChange={(_, v) => onChange(v)}
@@ -83,6 +102,7 @@ export function VowItemPicker({ occasionId, value, onChange, disabled }: VowItem
         )}
       />
 
+      {dense ? null : (
       <Stack direction="row" spacing={1} alignItems="center">
         <FormControlLabel
           control={
@@ -97,6 +117,7 @@ export function VowItemPicker({ occasionId, value, onChange, disabled }: VowItem
         />
         <Chip size="small" variant="outlined" label={`${items.length}`} />
       </Stack>
+      )}
     </Stack>
   );
 }

@@ -7,8 +7,10 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   IconButton,
   Stack,
+  Switch,
   Table,
   TableBody,
   TableCell,
@@ -47,10 +49,18 @@ interface BulkLine {
   member: MemberWithBalance | null;
   amount: string;
   note: string;
+  /** F-142 – הכיבוד שנבחר לשורה הזו. */
+  item: VowItemDto | null;
 }
 
 let lineKey = 0;
-const newLine = (): BulkLine => ({ key: lineKey++, member: null, amount: '', note: '' });
+const newLine = (): BulkLine => ({
+  key: lineKey++,
+  member: null,
+  amount: '',
+  note: '',
+  item: null,
+});
 
 /**
  * F-30..F-34 – הזנת נדר.
@@ -64,6 +74,11 @@ export function VowDialog({ open, mode, member, onClose, onSaved }: VowDialogPro
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [vowItem, setVowItem] = useState<VowItemDto | null>(null);
+  /**
+   * "כל הרשימה" בהזנה מרובה הוא החלטה אחת לכל הטבלה ולא מתג בכל שורה:
+   * שורה לכל חבר עם מתג משלה היא רעש, והמצב היה שונה בין שורות.
+   */
+  const [bulkShowAll, setBulkShowAll] = useState(false);
   const [lines, setLines] = useState<BulkLine[]>([newLine(), newLine(), newLine()]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -139,6 +154,7 @@ export function VowDialog({ open, mode, member, onClose, onSaved }: VowDialogPro
             memberId: l.member!.id,
             amountAgorot: shekelToAgorot(parseShekelInput(l.amount)!),
             occasionNote: l.note.trim() || null,
+            vowItemId: l.item?.id ?? null,
           })),
         });
         onSaved(he.vow.bulkSaved(res.ids.length, formatAgorot(res.totalAgorot)), null);
@@ -224,12 +240,30 @@ export function VowDialog({ open, mode, member, onClose, onSaved }: VowDialogPro
             </>
           ) : (
             <>
-              <Alert severity="info">{he.vow.bulkHint}</Alert>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Alert severity="info" sx={{ flex: 1 }}>
+                  {he.vow.bulkHint}
+                </Alert>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      size="small"
+                      checked={bulkShowAll}
+                      onChange={(e) => setBulkShowAll(e.target.checked)}
+                      disabled={occasionId === null}
+                    />
+                  }
+                  label={
+                    <Typography variant="caption">{he.vowItems.showAll}</Typography>
+                  }
+                />
+              </Stack>
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ width: '42%' }}>{he.vow.member}</TableCell>
-                    <TableCell sx={{ width: 150 }}>{he.vow.amount}</TableCell>
+                    <TableCell sx={{ width: '28%' }}>{he.vow.member}</TableCell>
+                    <TableCell sx={{ width: '28%' }}>{he.vowItems.pick}</TableCell>
+                    <TableCell sx={{ width: 130 }}>{he.vow.amount}</TableCell>
                     <TableCell>{he.vow.occasionNote}</TableCell>
                     <TableCell sx={{ width: 48 }} />
                   </TableRow>
@@ -253,6 +287,29 @@ export function VowDialog({ open, mode, member, onClose, onSaved }: VowDialogPro
                         />
                       </TableCell>
                       <TableCell>
+                        <VowItemPicker
+                          dense
+                          showAll={bulkShowAll}
+                          occasionId={occasionId}
+                          value={line.item}
+                          onChange={(item) =>
+                            setLines((ls) =>
+                              ls.map((l, i) =>
+                                i === idx
+                                  ? {
+                                      ...l,
+                                      item,
+                                      // הבחירה ממלאת את הפירוט, ואינה נועלת
+                                      // אותו: אפשר להוסיף "לרפואת..." אחריה.
+                                      note: item === null ? l.note : item.name,
+                                    }
+                                  : l,
+                              ),
+                            )
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
                         <TextField
                           value={line.amount}
                           onChange={(e) =>
@@ -262,6 +319,7 @@ export function VowDialog({ open, mode, member, onClose, onSaved }: VowDialogPro
                           }
                           inputMode="decimal"
                           fullWidth
+                          size="small"
                         />
                       </TableCell>
                       <TableCell>

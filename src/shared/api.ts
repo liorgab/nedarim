@@ -224,7 +224,13 @@ export interface VowInputDto {
 export interface BulkVowInputDto {
   chargeDate: IsoDate;
   occasionId: number;
-  lines: Array<{ memberId: number; amountAgorot: number; occasionNote?: string | null }>;
+  lines: Array<{
+    memberId: number;
+    amountAgorot: number;
+    occasionNote?: string | null;
+    /** F-142 – הכיבוד שנבחר מהרשימה עבור השורה הזו. */
+    vowItemId?: number | null;
+  }>;
 }
 
 export interface CreditInputDto {

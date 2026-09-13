@@ -129,7 +129,13 @@ export function createVow(db: Database, input: VowInput, userId: number): number
 export interface BulkVowInput {
   chargeDate: IsoDate;
   occasionId: number;
-  lines: Array<{ memberId: number; amountAgorot: number; occasionNote?: string | null }>;
+  lines: Array<{
+    memberId: number;
+    amountAgorot: number;
+    occasionNote?: string | null;
+    /** F-142 – הכיבוד שנבחר מהרשימה עבור השורה הזו. */
+    vowItemId?: number | null;
+  }>;
 }
 
 /**
@@ -165,6 +171,7 @@ export function createVowsBulk(
           occasionId: input.occasionId,
           occasionNote: line.occasionNote ?? null,
           amountAgorot: line.amountAgorot,
+          vowItemId: line.vowItemId ?? null,
         },
         userId,
       ),
