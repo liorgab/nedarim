@@ -180,6 +180,9 @@ const api: NedarimApi = {
   danger: {
     deletionScope: () => invoke('danger:deletionScope'),
     deleteDatabase: (confirmation) => invoke('danger:deleteDatabase', confirmation),
+    uninstallInfo: () => invoke('danger:uninstallInfo'),
+    uninstall: (deleteData, confirmation) =>
+      invoke('danger:uninstall', deleteData, confirmation),
   },
   audit: {
     list: (filter) => invoke('audit:list', filter),

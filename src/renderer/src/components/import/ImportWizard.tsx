@@ -11,8 +11,10 @@ import {
   Step,
   StepLabel,
   Stepper,
+  Typography,
 } from '@mui/material';
 import type {
+  BackupInfoDto,
   ImportEntityDto,
   ImportFileDto,
   ImportModeDto,
@@ -52,16 +54,9 @@ export interface ImportWizardProps {
   onClose: () => void;
   /** הושלם ייבוא – המסכים שמאחורי האשף צריכים להיטען מחדש. */
   onImported: (result: ImportResultDto) => void;
-  /** נבחרה תיקיית גיבוי – מקומה במסלול השחזור, לא כאן. */
-  onRestoreRequested: (path: string) => void;
 }
 
-export function ImportWizard({
-  open,
-  onClose,
-  onImported,
-  onRestoreRequested,
-}: ImportWizardProps) {
+export function ImportWizard({ open, onClose, onImported }: ImportWizardProps) {
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +65,8 @@ export function ImportWizard({
   const [catalog, setCatalog] = useState<ImportEntityDto[]>([]);
   const [mode, setMode] = useState<ImportModeDto>('upsert');
   const [file, setFile] = useState<ImportFileDto | null>(null);
+  const [backups, setBackups] = useState<BackupInfoDto[] | null>(null);
+  const [restoring, setRestoring] = useState<BackupInfoDto | null>(null);
   const [preflight, setPreflight] = useState<ImportPreflightDto | null>(null);
   const [validation, setValidation] = useState<ImportValidationDto | null>(null);
   const [result, setResult] = useState<ImportResultDto | null>(null);
@@ -79,6 +76,8 @@ export function ImportWizard({
     setStep(0);
     setError(null);
     setFile(null);
+    setBackups(null);
+    setRestoring(null);
     setPreflight(null);
     setValidation(null);
     setResult(null);
@@ -170,16 +169,18 @@ export function ImportWizard({
           <StepFile
             file={file}
             catalog={catalog}
+            backups={backups}
             onChoose={() =>
               guard(async () => {
                 const choice = await window.api.importer.chooseFile();
                 if (choice.kind === 'cancelled') return;
                 if (choice.kind === 'invalid') throw new Error(choice.message);
                 if (choice.kind === 'backup') {
-                  onRestoreRequested(choice.path);
+                  setBackups(choice.backups);
                   return;
                 }
                 setFile(choice.file);
+                setBackups(null);
                 setValidation(null);
               })
             }
@@ -188,9 +189,10 @@ export function ImportWizard({
                 const choice = await window.api.importer.chooseBackup();
                 if (choice.kind === 'cancelled') return;
                 if (choice.kind === 'invalid') throw new Error(choice.message);
-                if (choice.kind === 'backup') onRestoreRequested(choice.path);
+                if (choice.kind === 'backup') setBackups(choice.backups);
               })
             }
+            onRestore={setRestoring}
             onDownloadTemplate={() =>
               guard(async () => {
                 await window.api.importer.downloadTemplate();
@@ -258,6 +260,44 @@ export function ImportWizard({
           ) : null}
         </Stack>
       </DialogActions>
+      {/*
+        F-101 – השחזור נעשה **כאן** ולא במסך אחר. גבאי שהגיע לאשף עם גיבוי
+        ביד אינו אמור להישלח למסך ההגדרות כדי למצוא אותו שוב ברשימה.
+      */}
+      <Dialog open={restoring !== null} onClose={() => setRestoring(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>{he.importer.restoreTitle}</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2}>
+            <Alert severity="warning">{he.importer.restoreWarning}</Alert>
+            {restoring?.manifest === null || restoring === null ? null : (
+              <Typography variant="body2">
+                {`${restoring.manifest.counts.members} ${he.backup.members} · ` +
+                  `${restoring.manifest.counts.receipts} ${he.backup.receipts}`}
+              </Typography>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRestoring(null)} disabled={busy}>
+            {he.importer.cancel}
+          </Button>
+          <Button
+            variant="contained"
+            color="warning"
+            disabled={busy}
+            onClick={() =>
+              void guard(async () => {
+                await window.api.backup.restore(restoring!.path);
+                // ה-main כבר פתח את בסיס הנתונים המשוחזר; רענון המסך הוא כל
+                // מה שנדרש כדי שכל הדפים יטענו את הנתונים החדשים.
+                window.location.reload();
+              })
+            }
+          >
+            {he.importer.restoreConfirm}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   );
 }

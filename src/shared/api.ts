@@ -836,11 +836,16 @@ export interface ImportFileDto {
   sheets: ImportSheetDto[];
 }
 
-/** מה שחוזר מבחירת קובץ: קובץ נתונים, תיקיית גיבוי, או ביטול. */
+/** מה שחוזר מבחירת קובץ: קובץ נתונים, גיבויים שנמצאו, או ביטול. */
 export type ImportChoiceDto =
   | { kind: 'file'; file: ImportFileDto }
-  | { kind: 'backup'; path: string }
-  /** נבחרה תיקייה שאינה גיבוי – ההודעה מוצגת למשתמש. */
+  /**
+   * הגיבויים שנמצאו בתיקייה שנבחרה. יותר מאחד כשנבחרה תיקיית-אב שמכילה
+   * כמה גיבויים – הגבאי אינו יודע איזו תיקייה היא "הגיבוי", ולכן שתי
+   * הצורות מתקבלות.
+   */
+  | { kind: 'backup'; dir: string; backups: BackupInfoDto[] }
+  /** נבחרה תיקייה שאין בה גיבוי – ההודעה מוצגת למשתמש. */
   | { kind: 'invalid'; message: string }
   | { kind: 'cancelled' };
 
@@ -904,7 +909,7 @@ export interface ImportApi {
   /** F-123 – בחירת קובץ נתונים. */
   chooseFile(): Promise<ImportChoiceDto>;
   /**
-   * F-127 – בחירת תיקיית גיבוי.
+   * F-127 – בחירת תיקיית גיבוי, ומה שנמצא בה.
    *
    * נפרד מ-`chooseFile` כי גיבוי הוא **תיקייה**, ודיאלוג של Windows אינו
    * יכול לבחור קובץ ותיקייה באותה פתיחה. שני כפתורים הם המחיר, והחלופה
@@ -945,6 +950,15 @@ export interface DeletionScopeDto {
   synagogueName: string;
 }
 
+export interface UninstallInfoDto {
+  /** האם נמצא Uninstaller – כלומר זו התקנה ולא הרצת פיתוח. */
+  available: boolean;
+  /** הסבר בעברית כשאי אפשר להסיר מכאן. */
+  reason: string | null;
+  /** תיקיית הנתונים שתימחק אם יתבקש. מוצגת למשתמש כדי שידע מה נמחק. */
+  userDataDir: string;
+}
+
 export interface DangerApi {
   /** F-130 – מה עומד להימחק. מוצג לפני האישור. */
   deletionScope(): Promise<DeletionScopeDto>;
@@ -953,6 +967,15 @@ export interface DangerApi {
    * `confirmation` חייב להיות שם בית הכנסת.
    */
   deleteDatabase(confirmation: string): Promise<{ backupPath: string }>;
+  /** F-131 – האם אפשר להסיר את התוכנה מכאן, ומה תהיה ההיקף. */
+  uninstallInfo(): Promise<UninstallInfoDto>;
+  /**
+   * F-131 – מסיר את התוכנה. `deleteData` קובע אם גם הנתונים נמחקים.
+   * `confirmation` (שם בית הכנסת) נדרש רק כשמוחקים נתונים.
+   *
+   * **היישום נסגר.** ה-Uninstaller של Windows ממשיך משם ומציג את המסך שלו.
+   */
+  uninstall(deleteData: boolean, confirmation: string): Promise<void>;
 }
 
 // ---------------------------------------------------------------- יומן ביקורת
@@ -1529,6 +1552,8 @@ export const IPC_CHANNELS = {
 
   'danger:deletionScope': true,
   'danger:deleteDatabase': true,
+  'danger:uninstallInfo': true,
+  'danger:uninstall': true,
 
   'audit:list': true,
   'audit:entities': true,

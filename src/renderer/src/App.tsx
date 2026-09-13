@@ -453,10 +453,6 @@ export default function App() {
           setReloadToken((t) => t + 1);
           setNotice(he.importer.summaryTitle);
         }}
-        onRestoreRequested={() => {
-          setImportOpen(false);
-          setView({ name: 'settings', tab: 'backup' });
-        }}
       />
 
     </Box>

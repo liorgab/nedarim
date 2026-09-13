@@ -59,6 +59,12 @@ describe('הגדרת הצעדים', () => {
       expect(step.keys.length, step.id).toBeGreaterThan(0);
     }
   });
+
+  it('אין באשף בחירת תיקיית גיבוי', () => {
+    // מיד אחרי האשף נפתח אשף הייבוא, ולכן "בחרו תיקיית גיבוי" נקרא
+    // כ"מאיפה לייבא". שחזור מגיבוי הוא ייבוא, ומקומו שם.
+    expect(wizardKeys()).not.toContain('backup_dir');
+  });
 });
 
 describe('מצב האשף', () => {

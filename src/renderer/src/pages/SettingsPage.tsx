@@ -225,7 +225,6 @@ export function SettingsPage({ onNotify, onChanged, session, initialTab }: Setti
               config.reload();
               onChanged();
             }}
-            onGoToBackups={() => setTab('backup')}
           />
         ) : null}
 

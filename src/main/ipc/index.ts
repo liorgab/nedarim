@@ -1,5 +1,6 @@
 import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { spawn } from 'node:child_process';
 import type {
   AuditFilterDto,
   MessageTemplateInputDto,
@@ -50,6 +51,7 @@ import {
   validateSession,
 } from '../import/session';
 import { confirmationMatches, deleteDatabase, deletionScope } from '../services/dangerZone';
+import { findUninstaller, writeUninstallScript } from '../services/uninstall';
 import {
   changeOwnPassword,
   createUser as createUserSvc,
@@ -64,6 +66,7 @@ import {
   applyRestore,
   createBackup,
   defaultBackupDir,
+  findBackups,
   externalBackupReminder,
   listBackups,
   prepareRestore,
@@ -716,7 +719,10 @@ const handlers: Record<IpcChannel, Handler> = {
     // (CLAUDE.md כלל-על 17). אותו דפוס כמו NEDARIM_SCREENSHOT.
     const forced = process.env['NEDARIM_IMPORT_FILE'];
     if (forced !== undefined && forced !== '') {
-      if (isBackupFolder(forced)) return { kind: 'backup', path: forced };
+      // אותה הבחנה בדיוק כמו במסלול האמיתי: תיקייה שיש בה גיבויים מוחזרת
+      // כגיבויים, וכל השאר כקובץ נתונים.
+      const found = findBackups(forced);
+      if (found.length > 0) return { kind: 'backup', dir: forced, backups: found };
       return { kind: 'file', file: await openImportFile(forced) };
     }
 
@@ -733,7 +739,9 @@ const handlers: Record<IpcChannel, Handler> = {
     if (path === undefined) return { kind: 'cancelled' };
     // גיבוי מוחזר כגיבוי ולא כקובץ: שחזור מחזיר גם את הקבלות והקבצים
     // המצורפים, וייבוא לא.
-    if (isBackupFolder(path)) return { kind: 'backup', path };
+    if (isBackupFolder(path)) {
+      return { kind: 'backup', dir: path, backups: findBackups(path) };
+    }
     return { kind: 'file', file: await openImportFile(path) };
   }) as Handler,
   'importer:chooseBackup': (async () => {
@@ -743,14 +751,18 @@ const handlers: Record<IpcChannel, Handler> = {
     });
     const path = res.canceled ? undefined : res.filePaths[0];
     if (path === undefined) return { kind: 'cancelled' };
-    if (!isBackupFolder(path)) {
+
+    // מתקבלת גם תיקיית הגיבוי עצמה וגם תיקייה שמכילה גיבויים: הגבאי רואה
+    // `backups/auto/nedarim-backup-…` ובוחר את מה שנראה לו נכון.
+    const backups = findBackups(path);
+    if (backups.length === 0) {
       return {
         kind: 'invalid',
         message:
-          'התיקייה שנבחרה אינה גיבוי של המערכת. תיקיית גיבוי מכילה את הקבצים nedarim.db ו-manifest.json.',
+          'לא נמצא גיבוי בתיקייה שנבחרה. תיקיית גיבוי מכילה את הקבצים nedarim.db ו-manifest.json, או תיקיות בשם "nedarim-backup-…".',
       };
     }
-    return { kind: 'backup', path };
+    return { kind: 'backup', dir: path, backups };
   }) as Handler,
   'importer:current': () => currentSession(),
   'importer:updateSheet': ((index: number, patch: Parameters<typeof updateSheet>[1]) =>
@@ -799,6 +811,62 @@ const handlers: Record<IpcChannel, Handler> = {
     closeDatabase();
     initDatabase(userDataDir);
     return { backupPath: result.backup.path };
+  }) as Handler,
+
+  'danger:uninstallInfo': () => {
+    const installDir = dirname(app.getPath('exe'));
+    const uninstaller = app.isPackaged ? findUninstaller(installDir) : null;
+    // עזר בדיקות: מאפשר לפתוח את מסך ההסרה בפיתוח כדי לראות אותו. ההסרה
+    // עצמה עדיין מסורבת כשהיישום אינו ארוז – אין כאן דרך להסיר בטעות.
+    const preview = !app.isPackaged && process.env['NEDARIM_UNINSTALL_PREVIEW'] === '1';
+    return {
+      available: uninstaller !== null || preview,
+      reason: app.isPackaged
+        ? uninstaller === null
+          ? 'לא נמצא קובץ ההסרה בתיקיית ההתקנה. אפשר להסיר דרך הגדרות Windows ← אפליקציות.'
+          : null
+        : preview
+          ? null
+          : 'הרצת פיתוח – אין מה להסיר.',
+      userDataDir: getUserDataDir(),
+    };
+  },
+  'danger:uninstall': ((deleteData: boolean, confirmation: string) => {
+    const installDir = dirname(app.getPath('exe'));
+    const uninstaller = app.isPackaged ? findUninstaller(installDir) : null;
+    if (uninstaller === null) {
+      throw new Error(
+        app.isPackaged
+          ? 'לא נמצא קובץ ההסרה. אפשר להסיר דרך הגדרות Windows ← אפליקציות.'
+          : 'הרצת פיתוח – אין מה להסיר. המסך מוצג לצורכי בדיקה בלבד.',
+      );
+    }
+    // מחיקת נתונים דורשת את אותו אישור כמו מחיקת בסיס הנתונים. הסרה בלי
+    // מחיקה היא הפיכה – הנתונים נשארים והתקנה חוזרת מוצאת אותם.
+    if (deleteData && !confirmationMatches(getDb(), confirmation)) {
+      throw new Error('שם בית הכנסת שהוקלד אינו תואם. ההסרה בוטלה.');
+    }
+
+    const userDataDir = getUserDataDir();
+    const { scriptPath } = writeUninstallScript(app.getPath('temp'), {
+      uninstaller,
+      userDataDir,
+      deleteData,
+    });
+
+    writeAudit(getDb(), {
+      userId: actor().id,
+      entity: 'app',
+      entityId: 0,
+      action: 'delete',
+      before: { event: 'uninstall', deleteData, at: nowIso() },
+    });
+
+    // סוגרים את ה-DB לפני היציאה, אחרת קובץ ה-WAL נשאר נעול והמחיקה
+    // בתסריט תיכשל בשקט.
+    closeDatabase();
+    spawn('cmd.exe', ['/c', scriptPath], { detached: true, stdio: 'ignore' }).unref();
+    app.quit();
   }) as Handler,
 
   // ---------------------------------------------------------- יומן ביקורת

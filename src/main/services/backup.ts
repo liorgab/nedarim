@@ -232,30 +232,52 @@ export function pruneBackups(targetDir: string, keep: number): string[] {
 }
 
 /** רשימת הגיבויים בתיקייה, החדש ביותר ראשון, עם אימות checksum. */
+/**
+ * קורא תיקיית גיבוי אחת. מיוצא כדי שאפשר יהיה לתאר גם תיקייה שנבחרה
+ * ישירות ולא נמצאה בסריקה של תיקיית-אב.
+ */
+export function describeBackup(path: string): BackupInfo {
+  let manifest: BackupManifest | null = null;
+  try {
+    manifest = JSON.parse(readFileSync(join(path, MANIFEST_NAME), 'utf8')) as BackupManifest;
+  } catch {
+    manifest = null;
+  }
+  const dbPath = join(path, 'nedarim.db');
+  const valid = manifest !== null && existsSync(dbPath) && sha256(dbPath) === manifest.dbSha256;
+  return {
+    path,
+    name: basename(path),
+    createdAt: manifest?.createdAt ?? nowIso(statSync(path).mtime),
+    sizeBytes: dirSize(path),
+    manifest,
+    valid,
+  };
+}
+
 export function listBackups(targetDir: string): BackupInfo[] {
   if (!existsSync(targetDir)) return [];
   return readdirSync(targetDir, { withFileTypes: true })
     .filter((e) => e.isDirectory() && e.name.startsWith(BACKUP_PREFIX))
-    .map((e) => {
-      const path = join(targetDir, e.name);
-      let manifest: BackupManifest | null = null;
-      try {
-        manifest = JSON.parse(readFileSync(join(path, MANIFEST_NAME), 'utf8')) as BackupManifest;
-      } catch {
-        manifest = null;
-      }
-      const dbPath = join(path, 'nedarim.db');
-      const valid = manifest !== null && existsSync(dbPath) && sha256(dbPath) === manifest.dbSha256;
-      return {
-        path,
-        name: e.name,
-        createdAt: manifest?.createdAt ?? nowIso(statSync(path).mtime),
-        sizeBytes: dirSize(path),
-        manifest,
-        valid,
-      };
-    })
+    .map((e) => describeBackup(join(targetDir, e.name)))
     .sort((a, b) => b.name.localeCompare(a.name));
+}
+
+/**
+ * כל הגיבויים שנמצאו בתיקייה שנבחרה – **בין אם היא עצמה גיבוי ובין אם היא
+ * מכילה גיבויים**.
+ *
+ * שני המקרים נדרשים כי הגבאי אינו יודע איזו מהתיקיות היא "הגיבוי": הוא
+ * רואה `backups/auto/nedarim-backup-20260912-152827` ובוחר את מה שנראה לו
+ * נכון. דרישה לבחור בדיוק את התיקייה הפנימית הייתה הופכת מסלול תקין
+ * ל"לא נמצא גיבוי".
+ */
+export function findBackups(dir: string): BackupInfo[] {
+  if (!existsSync(dir)) return [];
+  if (existsSync(join(dir, 'nedarim.db')) && existsSync(join(dir, MANIFEST_NAME))) {
+    return [describeBackup(dir)];
+  }
+  return listBackups(dir);
 }
 
 export interface RestorePlan {

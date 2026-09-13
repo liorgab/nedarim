@@ -65,6 +65,13 @@ export function StepSummary({ result }: StepSummaryProps) {
         </Table>
       </Paper>
 
+      {/*
+        הרגע שבו הנתונים נחתו הוא הרגע שבו יש מה לאבד. הצעד הזה החליף את
+        "בחרו תיקיית גיבוי" שהיה באשף ההתקנה והטעה – שם הוא נקרא כשאלה
+        מאיפה מייבאים.
+      */}
+      <Alert severity="info">{he.importer.backupReminder}</Alert>
+
       {skipped.map((sheet) => (
         <Accordion key={sheet.entityLabel} disableGutters>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
