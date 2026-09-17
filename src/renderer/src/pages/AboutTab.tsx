@@ -18,6 +18,8 @@ import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import SystemUpdateAltIcon from '@mui/icons-material/SystemUpdateAlt';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import type { AppInfo } from '@shared/types';
 import type { LegalDocIdDto, UpdateCheckDto } from '@shared/api';
 import { he } from '../i18n/he';
@@ -246,6 +248,62 @@ export function AboutTab({ onNotify }: AboutTabProps) {
             </Typography>
           </>
         ) : null}
+      </Paper>
+
+      {/*
+        בקשת הכותב. ממוקמת אחרי פרטי היישום ולפני הרישוי – מי שהגיע לכאן
+        בא לראות "מה זו התוכנה הזו", וזו התשובה האנושית לשאלה.
+      */}
+      <Paper
+        variant="outlined"
+        sx={{ p: 2, borderColor: 'primary.light', bgcolor: 'action.hover' }}
+      >
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
+          <AutoAwesomeIcon fontSize="small" color="primary" />
+          <Typography variant="h3">{he.about.blessing.title}</Typography>
+        </Stack>
+
+        <Typography variant="body2" sx={{ mb: 1.5, lineHeight: 1.8 }}>
+          {he.about.blessing.writtenBy}
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 2, lineHeight: 1.8 }}>
+          {he.about.blessing.request}
+        </Typography>
+
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+          <Typography variant="body2" color="text.secondary">
+            {he.about.blessing.name}:
+          </Typography>
+          <Chip color="primary" label={he.about.blessing.nameValue} />
+        </Stack>
+
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          flexWrap="wrap"
+          useFlexGap
+          sx={{ mt: 1.5 }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            {he.about.blessing.tellMe}
+          </Typography>
+          <Typography variant="body2" sx={{ direction: 'ltr', fontWeight: 600 }}>
+            {he.about.blessing.email}
+          </Typography>
+          <Button
+            size="small"
+            startIcon={<ContentCopyIcon fontSize="small" />}
+            onClick={() => {
+              // העתקה ולא `mailto:`: לא בכל מחשב מוגדרת תוכנת דואר, וקישור
+              // שלא עושה כלום גרוע מכתובת שאפשר להדביק.
+              void navigator.clipboard.writeText(he.about.blessing.email);
+              onNotify(he.about.blessing.copied);
+            }}
+          >
+            {he.about.blessing.copyEmail}
+          </Button>
+        </Stack>
       </Paper>
 
       <Paper variant="outlined" sx={{ p: 2 }}>
