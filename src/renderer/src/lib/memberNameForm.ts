@@ -49,8 +49,19 @@ export function nameForSave(
   return { firstName, lastName: '' };
 }
 
-/** האם השם מלא מספיק כדי לשמור. */
-export function nameIsComplete(mode: NameMode, typed: StoredName): boolean {
+/**
+ * האם השם מלא מספיק כדי לשמור.
+ *
+ * במצב "נפרד" שני השדות חובה – אבל **לא** לחבר שנשמר בעבר כשם מלא אחד.
+ * בית כנסת שעובר משם מלא לניהול נפרד ממשיך להשתמש בשם שכבר קיים, ומפצל
+ * אותו כשנוח לו. עדכון טלפון אינו אמור לחייב פיצול שם.
+ */
+export function nameIsComplete(
+  mode: NameMode,
+  typed: StoredName,
+  original: StoredName | null = null,
+): boolean {
   if (typed.firstName.trim() === '') return false;
-  return mode === 'full' || typed.lastName.trim() !== '';
+  if (mode === 'full' || typed.lastName.trim() !== '') return true;
+  return original !== null && original.lastName.trim() === '';
 }

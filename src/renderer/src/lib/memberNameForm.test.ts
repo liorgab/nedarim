@@ -69,4 +69,20 @@ describe('מתי אפשר לשמור', () => {
     expect(nameIsComplete('full', { firstName: '   ', lastName: '' })).toBe(false);
     expect(nameIsComplete('split', { firstName: '   ', lastName: 'ישראלי' })).toBe(false);
   });
+
+  it('במצב מפוצל – חבר שנשמר כשם מלא אחד אינו נחסם', () => {
+    // בית כנסת שעבר משם מלא לניהול נפרד: בלי זה כל עדכון של כל חבר
+    // קיים – גם עדכון טלפון – היה נעול עד שכל הרשימה פוצלה ידנית.
+    const legacy = { firstName: 'ישראל ישראלי', lastName: '' };
+    expect(nameIsComplete('split', legacy, legacy)).toBe(true);
+  });
+
+  it('במצב מפוצל – חבר חדש עדיין חייב שני שדות', () => {
+    // אין "original", כלומר זו הוספה ולא עריכה של רשומה ישנה.
+    expect(nameIsComplete('split', { firstName: 'ישראל ישראלי', lastName: '' }, null)).toBe(false);
+  });
+
+  it('במצב מפוצל – חבר שכבר מפוצל לא יכול לאבד את שם המשפחה', () => {
+    expect(nameIsComplete('split', { firstName: 'ישראל', lastName: '' }, split)).toBe(false);
+  });
 });

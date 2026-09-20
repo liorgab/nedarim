@@ -82,7 +82,13 @@ export function MemberDialog({ open, member, onClose, onSaved }: MemberDialogPro
 
   useEffect(() => {
     // במצב "שם מלא" יש שדה אחד בלבד, ולכן שם המשפחה אינו נדרש.
-    if (!nameIsComplete(nameMode, { firstName: form.firstName, lastName: form.lastName })) {
+    if (
+      !nameIsComplete(
+        nameMode,
+        { firstName: form.firstName, lastName: form.lastName },
+        storedName.current,
+      )
+    ) {
       setDuplicateWarning(null);
       return;
     }
@@ -194,6 +200,13 @@ export function MemberDialog({ open, member, onClose, onSaved }: MemberDialogPro
                 value={form.lastName}
                 onChange={set('lastName')}
                 required
+                // חבר שנשמר בעבר כשם מלא אחד אינו נחסם כאן: הפיצול נעשה
+                // כשנוח, ולא כתנאי לעדכון טלפון.
+                helperText={
+                  member && storedName.current?.lastName === '' && form.lastName.trim() === ''
+                    ? he.memberName.splitHint
+                    : ' '
+                }
                 sx={{ flex: 1 }}
               />
             </Stack>
@@ -256,7 +269,12 @@ export function MemberDialog({ open, member, onClose, onSaved }: MemberDialogPro
           variant="contained"
           onClick={() => void submit()}
           disabled={
-            busy || !nameIsComplete(nameMode, { firstName: form.firstName, lastName: form.lastName })
+            busy ||
+            !nameIsComplete(
+              nameMode,
+              { firstName: form.firstName, lastName: form.lastName },
+              storedName.current,
+            )
           }
         >
           {busy ? he.app.saving : he.app.save}

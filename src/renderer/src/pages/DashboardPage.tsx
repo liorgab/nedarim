@@ -22,7 +22,7 @@ import ReceiptIcon from '@mui/icons-material/Receipt';
 import type { DashboardDto } from '@shared/api';
 import type { MemberWithBalance } from '@shared/types';
 import { useAsync } from '../hooks/useAsync';
-import { balanceColor, formatAgorot, formatDate } from '../lib/format';
+import { balanceColor, formatAgorot, formatDate, memberFullName } from '../lib/format';
 import { he } from '../i18n/he';
 
 export interface DashboardPageProps {
@@ -222,7 +222,7 @@ export function DashboardPage({
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ width: 90 }}>{he.members.number}</TableCell>
-                  <TableCell>{he.members.firstName}</TableCell>
+                  <TableCell>{he.memberName.column}</TableCell>
                   <TableCell sx={{ width: 140, textAlign: 'end' }}>{he.members.balance}</TableCell>
                   <TableCell sx={{ width: 140 }}>{he.members.lastPayment}</TableCell>
                 </TableRow>
@@ -236,9 +236,7 @@ export function DashboardPage({
                     onClick={() => onOpenMember(m.id)}
                   >
                     <TableCell>{m.memberNumber}</TableCell>
-                    <TableCell>
-                      {m.firstName} {m.lastName}
-                    </TableCell>
+                    <TableCell>{memberFullName(m)}</TableCell>
                     <TableCell sx={{ textAlign: 'end' }}>
                       <Typography
                         component="span"

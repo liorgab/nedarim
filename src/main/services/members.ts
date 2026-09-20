@@ -236,13 +236,23 @@ export function createMember(db: Database, input: MemberInput, userId: number): 
  * הבדיקה כאן ולא רק בטופס: ה-renderer אינו הגבול, ויבוא או קריאת IPC
  * ישירה חייבים להיתקל באותו כלל.
  */
-function assertNameFilled(db: Database, first: string, last: string): void {
+function assertNameFilled(
+  db: Database,
+  first: string,
+  last: string,
+  storedLast?: string | null,
+): void {
   if (first === '') throw new Error('שם החבר הוא שדה חובה');
 
   const mode = getSetting(db, 'member_name_mode') ?? 'split';
-  if (mode !== 'full' && last === '') {
-    throw new Error('שם פרטי ושם משפחה הם שדות חובה');
-  }
+  if (mode === 'full' || last !== '') return;
+
+  // במצב "נפרד", חבר שנשמר בעבר כשם מלא אחד ממשיך להיות תקף עד שהגבאי
+  // יבחר לפצל אותו. אחרת מעבר משם מלא לניהול נפרד היה נועל כל עדכון של
+  // כל חבר קיים – גם עדכון טלפון – עד שכל הרשימה פוצלה ידנית.
+  if (storedLast !== undefined && (storedLast ?? '') === '') return;
+
+  throw new Error('שם פרטי ושם משפחה הם שדות חובה');
 }
 
 /** F-12 – עריכת פרטי חבר. שינוי שם אינו נוגע בקבלות שכבר הופקו (הן מקפיאות payer_name). */
@@ -254,7 +264,10 @@ export function updateMember(
 ): MemberWithBalance {
   const before = snapshot(db, 'member', id);
   if (!before) throw new Error(`חבר ${id} לא נמצא`);
-  assertNameFilled(db, input.firstName.trim(), input.lastName.trim());
+  const stored = db.prepare('SELECT last_name FROM member WHERE id = ?').get(id) as
+    | { last_name: string | null }
+    | undefined;
+  assertNameFilled(db, input.firstName.trim(), input.lastName.trim(), stored?.last_name ?? '');
 
   const mobile = normalizedMobileFor(db, input.mobile);
 

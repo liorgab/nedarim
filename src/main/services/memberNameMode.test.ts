@@ -126,6 +126,35 @@ describe('מעבר בין המצבים', () => {
     expect(getMember(db, m.id)?.lastName).toBe('ישראלי');
   });
 
+  it('חבר שנשמר כשם מלא ניתן לעדכון במצב "נפרד" בלי לפצל אותו', () => {
+    // זה המצב של בית כנסת שעבר משם מלא לניהול נפרד: בלי הכלל הזה כל
+    // עדכון של כל חבר קיים – גם עדכון טלפון בלבד – היה נכשל בשרת עד
+    // שכל הרשימה פוצלה ידנית.
+    setSetting(db, 'member_name_mode', 'full');
+    const m = createMember(db, input('ישראל ישראלי', ''), 1);
+
+    setSetting(db, 'member_name_mode', 'split');
+    const updated = updateMember(
+      db,
+      m.id,
+      { ...input('ישראל ישראלי', ''), mobile: '0501234567' },
+      1,
+    );
+    expect(updated.firstName).toBe('ישראל ישראלי');
+    expect(updated.lastName).toBe('');
+  });
+
+  it('חבר חדש במצב "נפרד" עדיין חייב שני שדות', () => {
+    // ההקלה היא רק על רשומה שכבר קיימת, לא על הזנה חדשה.
+    setSetting(db, 'member_name_mode', 'split');
+    expect(() => createMember(db, input('ישראל ישראלי', ''), 1)).toThrow(/שם משפחה/);
+  });
+
+  it('חבר שכבר מפוצל אינו יכול לאבד את שם המשפחה במצב "נפרד"', () => {
+    const m = createMember(db, input('ישראל', 'ישראלי'), 1);
+    expect(() => updateMember(db, m.id, input('ישראל', ''), 1)).toThrow(/שם משפחה/);
+  });
+
   it('חבר קיים עם שני שמות אינו נפגע מהמעבר ל"שם מלא"', () => {
     const m = createMember(db, input('ישראל', 'ישראלי'), 1);
     setSetting(db, 'member_name_mode', 'full');

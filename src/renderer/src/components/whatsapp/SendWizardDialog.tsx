@@ -255,7 +255,7 @@ export function SendWizardDialog({ open, memberIds, onClose, onSaved }: SendWiza
                 <TableHead>
                   <TableRow>
                     <TableCell>{he.members.number}</TableCell>
-                    <TableCell>{he.members.firstName}</TableCell>
+                    <TableCell>{he.memberName.column}</TableCell>
                     <TableCell>{he.whatsapp.mobile.column}</TableCell>
                     <TableCell align="right">{he.members.balance}</TableCell>
                     <TableCell>{he.members.status}</TableCell>

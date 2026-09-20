@@ -30,7 +30,13 @@ import { CreditDialog } from '../components/dialogs/CreditDialog';
 import { useAsync } from '../hooks/useAsync';
 import { SendOneDialog } from '../components/whatsapp/SendOneDialog';
 import { useEventNotification } from '../hooks/useEventNotification';
-import { balanceColor, fiscalYearStart, formatAgorot, formatDate } from '../lib/format';
+import {
+  balanceColor,
+  fiscalYearStart,
+  formatAgorot,
+  formatDate,
+  memberFullName,
+} from '../lib/format';
 import { he } from '../i18n/he';
 
 export interface MemberCardPageProps {
@@ -363,7 +369,7 @@ export function MemberCardPage({ memberId, onBack, onOpenReceipt, onNotify }: Me
           <Stack direction="row" spacing={3} alignItems="center" flexWrap="wrap" useFlexGap>
             <div>
               <Typography variant="h2">
-                {m.firstName} {m.lastName}
+                {memberFullName(m)}
                 {m.nickname ? ` (${m.nickname})` : ''}
               </Typography>
               <Typography variant="body2" color="text.secondary">

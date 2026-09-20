@@ -28,6 +28,7 @@ import type {
 } from '@shared/api';
 import { useAsync } from '../../hooks/useAsync';
 import { he } from '../../i18n/he';
+import { memberFullName } from '../../lib/format';
 
 export interface TemplatesPageProps {
   onNotify: (message: string) => void;
@@ -342,7 +343,7 @@ export function TemplatesPage({ onNotify, canEdit }: TemplatesPageProps) {
           >
             {memberOptions.map((m: MemberWithBalance) => (
               <MenuItem key={m.id} value={String(m.id)}>
-                {`${m.memberNumber} · ${m.firstName} ${m.lastName}`}
+                {`${m.memberNumber} · ${memberFullName(m)}`}
               </MenuItem>
             ))}
           </TextField>

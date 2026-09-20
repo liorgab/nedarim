@@ -19,6 +19,7 @@ import type { MemberWithBalance, MessageTemplateDto, NotificationDraftDto } from
 import { formatE164ForDisplay } from '@shared/phone';
 import { useWhatsAppStatus } from '../../hooks/useWhatsAppStatus';
 import { he } from '../../i18n/he';
+import { memberFullName } from '../../lib/format';
 
 export interface SendOneDialogProps {
   open: boolean;
@@ -115,7 +116,7 @@ export function SendOneDialog({
         draft !== null ? { kind: draft.eventKind, ref: draft.triggerRef } : null,
       );
       if (result.ok) {
-        onSent(he.whatsapp.sendOne.sent(member.firstName));
+        onSent(he.whatsapp.sendOne.sent(memberFullName(member)));
         onClose();
       } else {
         setError(result.errorMessage ?? he.app.error);
@@ -145,7 +146,7 @@ export function SendOneDialog({
         <Stack spacing={2}>
           {member !== null ? (
             <Stack direction="row" spacing={1} alignItems="center">
-              <Typography variant="body2">{`${member.firstName} ${member.lastName}`}</Typography>
+              <Typography variant="body2">{memberFullName(member)}</Typography>
               {member.mobileStatus === 'valid' ? (
                 <Chip
                   size="small"

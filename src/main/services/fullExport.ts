@@ -21,7 +21,11 @@ interface TableSpec {
 const TABLES: readonly TableSpec[] = [
   {
     sheet: 'חברים',
-    sql: `SELECT m.member_number AS "מס' חבר", m.first_name AS "שם פרטי",
+    sql: `SELECT m.member_number AS "מס' חבר",
+              -- F-13 – השם המלא תמיד מיוצא, בין אם הוא מנוהל מפוצל ובין
+              -- אם כשדה אחד. שני השדות הגולמיים נשארים לצדו.
+              TRIM(m.first_name || ' ' || m.last_name) AS "שם מלא",
+              m.first_name AS "שם פרטי",
                  m.last_name AS "שם משפחה", m.nickname AS "כינוי", m.mobile AS "נייד",
                  m.email AS "דוא""ל", m.address AS "כתובת",
                  CASE m.status WHEN 'active' THEN 'פעיל' ELSE 'לא פעיל' END AS "סטאטוס",
