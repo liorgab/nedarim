@@ -1,5 +1,18 @@
 import { useMemo, useState } from 'react';
-import { Alert, Box, Button, Stack, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Checkbox,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import { DataTable, type Column } from '../components/DataTable';
 import { KpiPanel, type Kpi } from '../components/KpiPanel';
@@ -18,6 +31,7 @@ interface PendingRow {
   date: string;
   amountAgorot: number;
   paymentMethod: string;
+  receiptName: string | null;
 }
 
 export interface PendingReceiptsPageProps {
@@ -61,10 +75,22 @@ export function PendingReceiptsPage({
     if (message !== null) onNotify(message);
   }
 
-  async function issue(row: PendingRow) {
+  /**
+   * F-76 – הפקה מאוחרת עם אפשרות לשם אחר.
+   *
+   * זה המסלול הנפוץ: הגבאי רשם תשלום במהירות ב"שמור בלי
+   * קבלה", ורק אחר כך התברר שהקבלה צריכה לצאת על שם חברה. בלי
+   * השאלה כאן הוא היה צריך למחוק את התשלום ולהזין אותו מחדש.
+   */
+  const [issuing, setIssuing] = useState<PendingRow | null>(null);
+  const [otherName, setOtherName] = useState(false);
+  const [receiptName, setReceiptName] = useState('');
+
+  async function issue(row: PendingRow, name: string): Promise<void> {
     setError(null);
     try {
-      const receipt = await window.api.payments.issueReceipt(row.id);
+      const receipt = await window.api.payments.issueReceipt(row.id, name);
+      setIssuing(null);
       query.reload();
       onNotify(he.payment.savedWithReceipt(receipt.receiptNumber));
       onOpenReceipt(receipt.id);
@@ -125,14 +151,18 @@ export function PendingReceiptsPage({
             size="small"
             variant="contained"
             startIcon={<ReceiptLongIcon />}
-            onClick={() => void issue(r)}
+            onClick={() => {
+              setIssuing(r);
+              // שם שכבר נשמר על התשלום מוצג מסומן, כדי שההפקה לא תבטל אותו בשתיקה.
+              setOtherName(r.receiptName !== null);
+              setReceiptName(r.receiptName ?? '');
+            }}
           >
             {he.pending.issue}
           </Button>
         ),
       },
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [onOpenMember],
   );
 
@@ -164,6 +194,49 @@ export function PendingReceiptsPage({
         onClose={notify.close}
         onSent={onNotify}
       />
+      {/* F-76 – שם אחר על הקבלה, ברגע ההפקה. */}
+      <Dialog open={issuing !== null} onClose={() => setIssuing(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>{he.receiptName.issueTitle}</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={1}>
+            <Typography variant="body2">
+              {he.receiptName.defaultName(issuing?.memberName ?? '')}
+            </Typography>
+            <FormControlLabel
+              control={
+                <Checkbox checked={otherName} onChange={(e) => setOtherName(e.target.checked)} />
+              }
+              label={he.receiptName.toggle}
+            />
+            {otherName ? (
+              <TextField
+                label={he.receiptName.label}
+                helperText={he.receiptName.help}
+                value={receiptName}
+                onChange={(e) => setReceiptName(e.target.value)}
+                autoFocus
+                fullWidth
+              />
+            ) : null}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIssuing(null)}>{he.app.cancel}</Button>
+          <Button
+            variant="contained"
+            startIcon={<ReceiptLongIcon />}
+            onClick={() => {
+              if (issuing === null) return;
+              // מחרוזת ריקה ולא undefined: אי-סימון התיבה הוא בקשה
+              // מפורשת לקבלה על שם החבר, גם אם נשמר קודם שם אחר.
+              void issue(issuing, otherName ? receiptName.trim() : '');
+            }}
+          >
+            {he.receiptName.issue}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
     </Box>
   );
 }

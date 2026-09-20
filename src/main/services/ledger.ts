@@ -159,12 +159,16 @@ export function paymentsWithoutReceipt(
   date: IsoDate;
   amountAgorot: number;
   paymentMethod: string;
+  /** F-76 – שם אחר שכבר נשמר על התשלום. `null` = על שם החבר. */
+  receiptName: string | null;
 }> {
   return db
     .prepare(
       `SELECT p.id AS id, p.member_id AS memberId, m.member_number AS memberNumber,
-              m.first_name || ' ' || m.last_name AS memberName,
-              p.payment_date AS date, p.amount_agorot AS amountAgorot, pm.name AS paymentMethod
+              -- F-13 – במצב "שם מלא" שם המשפחה ריק, ובלי TRIM נוצר רווח עוקב.
+              TRIM(m.first_name || ' ' || m.last_name) AS memberName,
+              p.payment_date AS date, p.amount_agorot AS amountAgorot, pm.name AS paymentMethod,
+              p.receipt_name AS receiptName
        FROM vow_payment p
        JOIN member m ON m.id = p.member_id
        JOIN payment_method pm ON pm.id = p.payment_method_id

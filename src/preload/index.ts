@@ -79,7 +79,8 @@ const api: NedarimApi = {
     create: (input, issueReceipt) => invoke('payments:create', input, issueReceipt),
     createBulk: (input, issueReceipts) => invoke('payments:createBulk', input, issueReceipts),
     remove: (id) => invoke('payments:remove', id),
-    issueReceipt: (paymentId) => invoke('payments:issueReceipt', paymentId),
+    issueReceipt: (paymentId, receiptName) =>
+      invoke('payments:issueReceipt', paymentId, receiptName),
   },
   receipts: {
     list: (filter) => invoke('receipts:list', filter),
@@ -98,7 +99,7 @@ const api: NedarimApi = {
     create: (input, issueReceipt) => invoke('donations:create', input, issueReceipt),
     update: (id, input) => invoke('donations:update', id, input),
     remove: (id) => invoke('donations:remove', id),
-    issueReceipt: (id) => invoke('donations:issueReceipt', id),
+    issueReceipt: (id, receiptName) => invoke('donations:issueReceipt', id, receiptName),
     forMember: (memberId) => invoke('donations:forMember', memberId),
   },
   expenses: {

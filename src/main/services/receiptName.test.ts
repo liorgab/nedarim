@@ -7,6 +7,7 @@ import { openDatabase } from '../db/connection';
 import { seed } from '../db/seed';
 import { createPayment, issueReceiptForPayment, receiptPayerName } from './payments';
 import { createDonation, issueReceiptForDonation } from './donations';
+import { paymentsWithoutReceipt } from './ledger';
 import { cancelReceipt } from './receipts';
 
 /**
@@ -205,5 +206,101 @@ describe('תרומה', () => {
 
     cancelReceipt(db, receipt!.id, 'טעות', 1, 'admin');
     expect(issueReceiptForDonation(db, donationId, 1).payerName).toBe('עמותת אור');
+  });
+});
+
+/**
+ * F-76 – קביעת השם **ברגע ההפקה**, לא ברגע השמירה.
+ *
+ * המסלול הנפוץ אצל הגבאי: הוא רושם תשלום במהירות ב"שמור בלי
+ * קבלה", ורק כשהתורם מבקש את הקבלה מתברר שהיא צריכה לצאת על שם
+ * חברה. בלי הפרמטר הזה הוא היה צריך למחוק את התשלום ולהזין מחדש.
+ */
+describe('קביעת השם ברגע ההפקה', () => {
+  const pending = () => {
+    const member = addMember();
+    return createPayment(
+      db,
+      {
+        memberId: member,
+        paymentDate: '2026-09-15',
+        amountAgorot: 50000,
+        paymentMethodId: methodId(),
+      },
+      1,
+      { issueReceipt: false },
+    ).paymentId;
+  };
+
+  it('שם שנמסר בהפקה נכנס לקבלה', () => {
+    expect(issueReceiptForPayment(db, pending(), 1, 'עמותת אור בע"מ').payerName).toBe(
+      'עמותת אור בע"מ',
+    );
+  });
+
+  it('השם נשמר על התשלום, ולכן גם הפקה חוזרת יודעת עליו', () => {
+    const paymentId = pending();
+    const first = issueReceiptForPayment(db, paymentId, 1, 'עמותת אור');
+    cancelReceipt(db, first.id, 'טעות', 1, 'admin');
+    // הפעם בלי פרמטר כלל – הערך שנשמר הוא שקובע.
+    expect(issueReceiptForPayment(db, paymentId, 1).payerName).toBe('עמותת אור');
+  });
+
+  it('מחרוזת ריקה מבטלת שם אחר שנשמר קודם', () => {
+    // זו ההבחנה שבגללה הפרמטר הוא `string | null` ולא רק "אופציונלי":
+    // הסרת הסימון בדיאלוג חייבת להיות ניתנת לביטוי, ולא להיראות כ"אל תגע".
+    const member = addMember();
+    const { paymentId } = createPayment(
+      db,
+      {
+        memberId: member,
+        paymentDate: '2026-09-15',
+        amountAgorot: 50000,
+        paymentMethodId: methodId(),
+        receiptName: 'עמותת אור',
+      },
+      1,
+      { issueReceipt: false },
+    );
+    expect(issueReceiptForPayment(db, paymentId, 1, '').payerName).toBe('ישראל ישראלי');
+  });
+
+  it('רשימת "ממתינים לקבלה" מחזירה את השם שנשמר', () => {
+    // המסך מסמן את התיבה לפי זה; בלי זה ההפקה הייתה מוחקת את השם בשתיקה.
+    const member = addMember();
+    createPayment(
+      db,
+      {
+        memberId: member,
+        paymentDate: '2026-09-15',
+        amountAgorot: 50000,
+        paymentMethodId: methodId(),
+        receiptName: 'עמותת אור',
+      },
+      1,
+      { issueReceipt: false },
+    );
+    expect(paymentsWithoutReceipt(db)[0]?.receiptName).toBe('עמותת אור');
+  });
+
+  it('תרומה – שם שנמסר בהפקה נכנס לקבלה ונשמר', () => {
+    const { donationId } = createDonation(
+      db,
+      {
+        donationDate: '2026-09-15',
+        donorName: 'משה כהן',
+        donationTypeId: typeId(),
+        paymentMethodId: methodId(),
+        amountAgorot: 100000,
+      },
+      1,
+      { issueReceipt: false },
+    );
+
+    const first = issueReceiptForDonation(db, donationId, 1, 'כהן ובניו בע"מ');
+    expect(first.payerName).toBe('כהן ובניו בע"מ');
+
+    cancelReceipt(db, first.id, 'טעות', 1, 'admin');
+    expect(issueReceiptForDonation(db, donationId, 1).payerName).toBe('כהן ובניו בע"מ');
   });
 });

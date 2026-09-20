@@ -389,7 +389,17 @@ export function deleteDonation(
 }
 
 /** F-70 – הפקת קבלה לתרומה קיימת. */
-export function issueReceiptForDonation(db: Database, id: number, userId: number): Receipt {
+export function issueReceiptForDonation(
+  db: Database,
+  id: number,
+  userId: number,
+  receiptName?: string | null,
+): Receipt {
+  if (receiptName !== undefined) {
+    const clean = (receiptName ?? '').trim() || null;
+    db.prepare('UPDATE donation SET receipt_name = ? WHERE id = ?').run(clean, id);
+  }
+
   const d = getDonation(db, id);
   if (!d) throw new Error('התרומה לא נמצאה');
   return issueReceipt(

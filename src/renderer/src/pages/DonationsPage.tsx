@@ -3,7 +3,13 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
   IconButton,
   MenuItem,
   Stack,
@@ -37,6 +43,25 @@ export interface DonationsPageProps {
 export function DonationsPage({ onOpenReceipt, onNotify }: DonationsPageProps) {
   // W-86 – הודעת התרומה שממתינה לאישור.
   const notify = useEventNotification();
+  /**
+   * F-76 – הפקה מאוחרת של קבלה לתרומה שנשמרה בלעדיה.
+   *
+   * בלי השאלה כאן אין שום דרך לקבוע שם אחר אחרי השמירה, והקבלה
+   * היא Immutable – כלומר טעות כאן עולה ביטול קבלה.
+   */
+  const [issuing, setIssuing] = useState<DonationDto | null>(null);
+  const [otherName, setOtherName] = useState(false);
+  const [receiptName, setReceiptName] = useState('');
+
+  async function issueFor(donation: DonationDto, name: string): Promise<void> {
+    await act(async () => {
+      const receipt = await window.api.donations.issueReceipt(donation.id, name);
+      setIssuing(null);
+      onNotify(he.donations.savedWithReceipt(receipt.receiptNumber));
+      onOpenReceipt(receipt.id);
+      await offerNotification({ kind: 'receipt', refId: receipt.id });
+    });
+  }
   const [search, setSearch] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -198,14 +223,11 @@ export function DonationsPage({ onOpenReceipt, onNotify }: DonationsPageProps) {
               <IconButton aria-label={he.pending.issue}
                 size="small"
                 color="primary"
-                onClick={() =>
-                  void act(async () => {
-                    const receipt = await window.api.donations.issueReceipt(r.id);
-                    onNotify(he.donations.savedWithReceipt(receipt.receiptNumber));
-                    onOpenReceipt(receipt.id);
-                    await offerNotification({ kind: 'receipt', refId: receipt.id });
-                  })
-                }
+                onClick={() => {
+                  setIssuing(r);
+                  setOtherName(r.receiptName !== null);
+                  setReceiptName(r.receiptName ?? '');
+                }}
               >
                 <ReceiptLongIcon fontSize="small" />
               </IconButton>
@@ -400,6 +422,49 @@ export function DonationsPage({ onOpenReceipt, onNotify }: DonationsPageProps) {
           void offerNotification(notify);
         }}
       />
+
+      {/* F-76 – שם אחר על הקבלה, ברגע ההפקה. */}
+      <Dialog open={issuing !== null} onClose={() => setIssuing(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>{he.receiptName.issueTitle}</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={1}>
+            <Typography variant="body2">
+              {he.receiptName.defaultName(issuing?.donorName ?? '')}
+            </Typography>
+            <FormControlLabel
+              control={
+                <Checkbox checked={otherName} onChange={(e) => setOtherName(e.target.checked)} />
+              }
+              label={he.receiptName.toggle}
+            />
+            {otherName ? (
+              <TextField
+                label={he.receiptName.label}
+                helperText={he.receiptName.help}
+                value={receiptName}
+                onChange={(e) => setReceiptName(e.target.value)}
+                autoFocus
+                fullWidth
+              />
+            ) : null}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIssuing(null)}>{he.app.cancel}</Button>
+          <Button
+            variant="contained"
+            startIcon={<ReceiptLongIcon />}
+            onClick={() => {
+              if (issuing === null) return;
+              // מחרוזת ריקה ולא undefined: הסרת הסימון היא בקשה
+              // מפורשת לחזור לשם התורם, ולא "אל תגע".
+              void issueFor(issuing, otherName ? receiptName.trim() : '');
+            }}
+          >
+            {he.receiptName.issue}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* W-86 – הודעת התרומה, אחרי שדיאלוג התרומה כבר נסגר. */}
       <SendOneDialog

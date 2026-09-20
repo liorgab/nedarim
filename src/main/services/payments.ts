@@ -254,8 +254,22 @@ export function deletePayment(
   })();
 }
 
-/** F-70 – הפקת קבלה לתשלום קיים שנרשם בלי קבלה. */
-export function issueReceiptForPayment(db: Database, paymentId: number, userId: number): Receipt {
+/**
+ * F-70 – הפקת קבלה לתשלום קיים שנרשם בלי קבלה.
+ *
+ * `receiptName` מאפשר לקבוע או לשנות את השם **ברגע ההפקה** (F-76). זה
+ * המסלול הנפוץ: הגבאי רשם תשלום במהירות, ורק אחר כך התברר שהקבלה צריכה
+ * לצאת על שם חברה. בלי זה הוא היה צריך למחוק את התשלום ולהזין מחדש.
+ *
+ * `undefined` = לא לגעת במה שנשמר. מחרוזת ריקה = לבטל שם אחר ולחזור לשם
+ * החבר, וזו הבחנה שצריך להיות אפשר לבטא.
+ */
+export function issueReceiptForPayment(
+  db: Database,
+  paymentId: number,
+  userId: number,
+  receiptName?: string | null,
+): Receipt {
   const row = db
     .prepare(
       `SELECT p.*, pm.name AS method_name, m.first_name, m.last_name
@@ -276,6 +290,14 @@ export function issueReceiptForPayment(db: Database, paymentId: number, userId: 
       }
     | undefined;
   if (!row) throw new Error('התשלום לא נמצא');
+
+  // השם החדש נשמר על התשלום לפני ההפקה, כדי שגם הפקה חוזרת בעתיד תדע
+  // עליו. `undefined` משאיר את מה שכבר נשמר.
+  if (receiptName !== undefined) {
+    const clean = (receiptName ?? '').trim() || null;
+    db.prepare('UPDATE vow_payment SET receipt_name = ? WHERE id = ?').run(clean, paymentId);
+    row.receipt_name = clean;
+  }
 
   return issueReceipt(
     db,

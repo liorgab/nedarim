@@ -387,8 +387,8 @@ const handlers: Record<IpcChannel, Handler> = {
     const user = actor();
     deletePayment(getDb(), id, user.id, user.role);
   }) as Handler,
-  'payments:issueReceipt': ((paymentId: number) =>
-    issueReceiptForPayment(getDb(), paymentId, actor().id)) as Handler,
+  'payments:issueReceipt': ((paymentId: number, receiptName?: string | null) =>
+    issueReceiptForPayment(getDb(), paymentId, actor().id, receiptName)) as Handler,
 
   // ---------------------------------------------------------- קבלות
   'receipts:list': ((filter?: ReceiptFilterDto) => listReceipts(getDb(), filter ?? {})) as Handler,
@@ -442,8 +442,8 @@ const handlers: Record<IpcChannel, Handler> = {
     const user = actor();
     deleteDonation(getDb(), id, user.id, user.role);
   }) as Handler,
-  'donations:issueReceipt': ((id: number) =>
-    issueReceiptForDonation(getDb(), id, actor().id)) as Handler,
+  'donations:issueReceipt': ((id: number, receiptName?: string | null) =>
+    issueReceiptForDonation(getDb(), id, actor().id, receiptName)) as Handler,
   'donations:forMember': ((memberId: number) => donationsForMember(getDb(), memberId)) as Handler,
 
   // ---------------------------------------------------------- הוצאות

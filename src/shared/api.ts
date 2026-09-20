@@ -198,6 +198,8 @@ export interface LedgerApi {
       date: IsoDate;
       amountAgorot: number;
       paymentMethod: string;
+      /** F-76 – שם אחר שכבר נשמר. `null` = על שם החבר. */
+      receiptName: string | null;
     }>
   >;
 }
@@ -306,7 +308,13 @@ export interface PaymentsApi {
     issueReceipts: boolean,
   ): Promise<PaymentResultDto[]>;
   remove(id: number): Promise<void>;
-  issueReceipt(paymentId: number): Promise<ReceiptDto>;
+  /**
+   * F-70 – הפקת קבלה לרשומה שנשמרה בלי קבלה.
+   *
+   * `receiptName` (F-76) קובע או משנה את השם שעל הקבלה ברגע ההפקה.
+   * `undefined` = להשאיר את מה שנשמר; מחרוזת ריקה = לחזור לשם הרגיל.
+   */
+  issueReceipt(paymentId: number, receiptName?: string | null): Promise<ReceiptDto>;
 }
 
 // ---------------------------------------------------------------- קבלות
@@ -425,7 +433,13 @@ export interface DonationsApi {
   ): Promise<{ donationId: number; receipt: ReceiptDto | null }>;
   update(id: number, input: DonationInputDto): Promise<DonationDto>;
   remove(id: number): Promise<void>;
-  issueReceipt(id: number): Promise<ReceiptDto>;
+  /**
+   * F-70 – הפקת קבלה לרשומה שנשמרה בלי קבלה.
+   *
+   * `receiptName` (F-76) קובע או משנה את השם שעל הקבלה ברגע ההפקה.
+   * `undefined` = להשאיר את מה שנשמר; מחרוזת ריקה = לחזור לשם הרגיל.
+   */
+  issueReceipt(id: number, receiptName?: string | null): Promise<ReceiptDto>;
   forMember(memberId: number): Promise<DonationDto[]>;
 }
 
