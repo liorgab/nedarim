@@ -213,6 +213,7 @@ const api: NedarimApi = {
     events: () => invoke('notifications:events'),
     draft: (kind, refId, force) => invoke('notifications:draft', kind, refId, force),
     debtorIds: (minAgorot) => invoke('notifications:debtorIds', minAgorot),
+    sendability: (refs) => invoke('notifications:sendability', refs),
   },
   campaigns: {
     prepare: (input) => invoke('campaigns:prepare', input),

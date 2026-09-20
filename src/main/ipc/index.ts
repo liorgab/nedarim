@@ -93,6 +93,7 @@ import {
 } from '../services/templates';
 import {
   buildNotification,
+  notifySendability,
   debtorIds,
   notifySettings,
   setNotifyMode,
@@ -930,6 +931,9 @@ const handlers: Record<IpcChannel, Handler> = {
   }) as Handler,
   'notifications:debtorIds': ((minAgorot?: number) =>
     debtorIds(getDb(), minAgorot ?? 1)) as Handler,
+  'notifications:sendability': ((
+    refs: ReadonlyArray<{ kind: NotifyEventKindDto; refId: number }>,
+  ) => notifySendability(getDb(), refs)) as Handler,
 
   // ---------------------------------------------------------- וואטסאפ: קמפיינים
   'campaigns:prepare': ((input: {

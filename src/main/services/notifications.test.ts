@@ -13,7 +13,13 @@ import { createPayment, issueReceiptForPayment } from './payments';
 import { createDonation } from './donations';
 import { setSetting } from './settings';
 import { saveTemplate } from './templates';
-import { buildNotification, notifyModeFor, notifySettings, setNotifyMode } from './notifications';
+import {
+  buildNotification,
+  notifyModeFor,
+  notifySendability,
+  notifySettings,
+  setNotifyMode,
+} from './notifications';
 
 /**
  * W-80..W-89 – ההודעה שנלווית לאירוע כספי.
@@ -476,5 +482,103 @@ describe('תבנית ערוכה על ידי הגבאי', () => {
     // מושווה מול formatAgorot עצמו: הוא מוסיף סימני כיווניות ורווח מיוחד
     // סביב המספר, והבדיקה כאן היא שהגוף של הגבאי שימש – לא איך מעוצב סכום.
     expect(result.draft.text).toBe(`שלום ישראל, נדר ${formatAgorot(36000)}.`);
+  });
+});
+
+/**
+ * W-91 – האם האייקון בשורה יהיה ירוק.
+ *
+ * התקלה שבגללה זה נכתב: אייקון הוואטסאפ בשורה היה ירוק ולחיץ תמיד, וגם
+ * על חבר בלי נייד תקין. הגבאי לחץ, וקיבל הודעת מערכת שמסבירה שאי אפשר.
+ * ההחלטה כאן עוברת דרך אותה `decideNotify` של השליחה עצמה, כדי שלא
+ * ייווצר פער בין מה שהאייקון מבטיח לבין מה שקורה בלחיצה.
+ */
+describe('notifySendability', () => {
+  it('חבר עם נייד תקין – אפשר לשלוח', () => {
+    const vowId = newVow();
+    expect(notifySendability(db, [{ kind: 'vow', refId: vowId }])).toEqual([
+      { kind: 'vow', refId: vowId, ok: true },
+    ]);
+  });
+
+  it('אירוע כבוי אינו חוסם – הגבאי לחץ בכוונה', () => {
+    // זה ההבדל מ-buildNotification הרגיל: השליחה מהשורה היא `force`.
+    const vowId = newVow();
+    expect(notifySendability(db, [{ kind: 'vow', refId: vowId }])[0]?.ok).toBe(true);
+  });
+
+  it('חבר בלי נייד – חסום, עם הסבר', () => {
+    const noPhone = createMember(db, { firstName: 'משה', lastName: 'כהן' }, userId).id;
+    const vowId = createVow(
+      db,
+      { memberId: noPhone, chargeDate: '2026-09-06', occasionId, amountAgorot: 10000 },
+      userId,
+    );
+    const [state] = notifySendability(db, [{ kind: 'vow', refId: vowId }]);
+    expect(state?.ok).toBe(false);
+    expect(state?.message).toContain('נייד');
+  });
+
+  it('נייד פסול – מוחזר גם קוד הסיבה, לניסוח מדויק במסך', () => {
+    // "מספר קווי" אומר לגבאי מה לתקן; "אין נייד תקין" אינו אומר דבר.
+    const landline = createMember(
+      db,
+      { firstName: 'דוד', lastName: 'לוי', mobile: '02-6543210' },
+      userId,
+    ).id;
+    backfillMobileE164(db);
+    const vowId = createVow(
+      db,
+      { memberId: landline, chargeDate: '2026-09-06', occasionId, amountAgorot: 10000 },
+      userId,
+    );
+    const [state] = notifySendability(db, [{ kind: 'vow', refId: vowId }]);
+    expect(state?.ok).toBe(false);
+    expect(state?.mobileReason).toBe('landline');
+  });
+
+  it('תרומה בלי חבר משויך – חסומה', () => {
+    const { donationId } = createDonation(
+      db,
+      {
+        donationDate: '2026-09-06',
+        donorName: 'אורח',
+        donationTypeId,
+        paymentMethodId: cashMethodId,
+        amountAgorot: 5000,
+      },
+      userId,
+      { issueReceipt: false },
+    );
+    const [state] = notifySendability(db, [{ kind: 'donation', refId: donationId }]);
+    expect(state?.ok).toBe(false);
+    expect(state?.message).toContain('חבר');
+  });
+
+  it('אין תבנית פעילה – חסום', () => {
+    db.prepare("UPDATE message_template SET is_active = 0 WHERE event_kind = 'vow'").run();
+    const [state] = notifySendability(db, [{ kind: 'vow', refId: newVow() }]);
+    expect(state?.ok).toBe(false);
+    expect(state?.message).toContain('תבנית');
+  });
+
+  it('רשומה שאינה קיימת – חסומה ולא זורקת', () => {
+    expect(notifySendability(db, [{ kind: 'vow', refId: 99999 }])[0]?.ok).toBe(false);
+  });
+
+  it('רשימה מעורבת נענית בשאילתה אחת, בסדר שנשלח', () => {
+    const noPhone = createMember(db, { firstName: 'משה', lastName: 'כהן' }, userId).id;
+    const bad = createVow(
+      db,
+      { memberId: noPhone, chargeDate: '2026-09-06', occasionId, amountAgorot: 10000 },
+      userId,
+    );
+    const good = newVow();
+    const out = notifySendability(db, [
+      { kind: 'vow', refId: bad },
+      { kind: 'vow', refId: good },
+    ]);
+    expect(out.map((s) => s.ok)).toEqual([false, true]);
+    expect(out.map((s) => s.refId)).toEqual([bad, good]);
   });
 });

@@ -1022,7 +1022,7 @@ export const he = {
       dialogTitle: (event: string) => `שליחת הודעה – ${event}`,
       /** W-90 – שליחה יזומה משורה בטבלה. */
       sendRow: 'שלח הודעה בוואטסאפ',
-      sendRowDisabled: 'לתורם אין חבר משויך, ולכן אין למי לשלוח',
+      sendRowChecking: 'בודק אם אפשר לשלוח…',
       dialogHint: 'ההודעה מוכנה לפי התבנית של האירוע. אפשר לערוך אותה לפני השליחה.',
       skip: 'לא עכשיו',
       bulkNotSupported:

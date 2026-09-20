@@ -1245,6 +1245,23 @@ export interface NotificationsApi {
   ): Promise<NotificationResultDto>;
   /** W-88 – מזהי החברים בעלי יתרת חוב, לשליחה המונית בלחיצה אחת. */
   debtorIds(minAgorot?: number): Promise<number[]>;
+  /**
+   * W-91 – האם לחיצה על "שלח הודעה" בשורה תצליח, ואם לא – למה.
+   *
+   * נקראת פעם אחת לכל השורות שעל המסך, כדי שאייקון שנראה פעיל יהיה
+   * באמת פעיל. `mobileReason` הוא קוד, והניסוח העברי ב-`he.ts`.
+   */
+  sendability(
+    refs: ReadonlyArray<{ kind: NotifyEventKindDto; refId: number }>,
+  ): Promise<
+    Array<{
+      kind: NotifyEventKindDto;
+      refId: number;
+      ok: boolean;
+      message?: string;
+      mobileReason?: string;
+    }>
+  >;
 }
 
 // ---------------------------------------------------------------- וואטסאפ: קמפיינים
@@ -1676,6 +1693,7 @@ export const IPC_CHANNELS = {
   'notifications:events': true,
   'notifications:draft': true,
   'notifications:debtorIds': true,
+  'notifications:sendability': true,
 
   'campaigns:prepare': true,
   'campaigns:create': true,

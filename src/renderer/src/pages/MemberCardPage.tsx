@@ -29,6 +29,8 @@ import { PaymentDialog } from '../components/dialogs/PaymentDialog';
 import { CreditDialog } from '../components/dialogs/CreditDialog';
 import { useAsync } from '../hooks/useAsync';
 import { SendOneDialog } from '../components/whatsapp/SendOneDialog';
+import { SendRowButton } from '../components/whatsapp/SendRowButton';
+import { useSendability } from '../hooks/useSendability';
 import { useEventNotification } from '../hooks/useEventNotification';
 import {
   balanceColor,
@@ -58,6 +60,20 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 /** F-20..F-25 – כרטיסיית החבר. המסך המרכזי של המערכת. */
+/**
+ * W-86 – איזה אירוע הודעה מתאים לשורה ביומן.
+ *
+ * שורת חיוב היא נדר או זיכוי (`status` מחזיק את `ChargeKind`). 'opening'
+ * היא יתרת פתיחה מהייבוא ולא פעולה שנעשתה מול החבר, ולכן אין עליה מה
+ * לדווח.
+ */
+function notifyKindOf(r: LedgerRow): NotifyEventKindDto | null {
+  if (r.rowType === 'payment') return 'payment';
+  if (r.status === 'credit') return 'credit';
+  if (r.status === 'opening') return null;
+  return 'vow';
+}
+
 export function MemberCardPage({ memberId, onBack, onOpenReceipt, onNotify }: MemberCardPageProps) {
   const [period, setPeriod] = useState<Period>('all');
   const [from, setFrom] = useState('');
@@ -91,6 +107,18 @@ export function MemberCardPage({ memberId, onBack, onOpenReceipt, onNotify }: Me
         ...(search.trim() ? { search: search.trim() } : {}),
       }),
     [memberId, range.from, range.to, rowType, search],
+  );
+
+  /** W-91 – האם אפשר לשלוח הודעה על כל תנועה, בקריאה אחת לכל היומן. */
+  const sendability = useSendability(
+    useMemo(
+      () =>
+        (ledger.data?.rows ?? []).flatMap((r) => {
+          const kind = notifyKindOf(r);
+          return kind === null ? [] : [{ kind, refId: r.id }];
+        }),
+      [ledger.data],
+    ),
   );
 
   const reloadAll = () => {
@@ -298,34 +326,19 @@ export function MemberCardPage({ memberId, onBack, onOpenReceipt, onNotify }: Me
         width: 90,
         notSortable: true,
         render: (r) => {
-          // שורת חיוב היא נדר או זיכוי (`status` מחזיק את `ChargeKind`).
-          // 'opening' – יתרת פתיחה מהייבוא, לא פעולה שנעשתה מול החבר, ולכן
-          // אין עליה מה לדווח.
-          const eventKind: NotifyEventKindDto | null =
-            r.rowType === 'payment'
-              ? 'payment'
-              : r.status === 'credit'
-                ? 'credit'
-                : r.status === 'opening'
-                  ? null
-                  : 'vow';
+          const eventKind = notifyKindOf(r);
           // קבלה חוסמת מחיקה (CLAUDE.md כלל 5) – וה-tooltip מסביר למה.
           const lockedByReceipt = r.rowType === 'payment' && r.receiptNumber !== null;
           return (
           <Stack direction="row" spacing={0.5}>
             {/* W-90 – שליחה יזומה על שורה בודדת ביומן. */}
             {eventKind !== null ? (
-              <Tooltip title={he.whatsapp.notify.sendRow}>
-                <IconButton aria-label={he.whatsapp.notify.sendRow}
-                  size="small"
-                  color="success"
-                  onClick={() =>
-                    void offerNotification({ kind: eventKind, refId: r.id }, { force: true })
-                  }
-                >
-                  <WhatsAppIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
+              <SendRowButton
+                state={sendability({ kind: eventKind, refId: r.id })}
+                onSend={() =>
+                  void offerNotification({ kind: eventKind, refId: r.id }, { force: true })
+                }
+              />
             ) : null}
           <Tooltip title={lockedByReceipt ? he.card.actions.lockedByReceipt : he.card.actions.deleteRow}>
             <span>
@@ -344,7 +357,7 @@ export function MemberCardPage({ memberId, onBack, onOpenReceipt, onNotify }: Me
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [sendability],
   );
 
   return (

@@ -19,7 +19,6 @@ import {
 } from '@mui/material';
 import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { DonationDto, DonationFilterDto, NotifyRefDto } from '@shared/api';
@@ -29,6 +28,8 @@ import { FilterBar } from '../components/FilterBar';
 import { KpiPanel, type Kpi } from '../components/KpiPanel';
 import { DonationDialog } from '../components/dialogs/DonationDialog';
 import { SendOneDialog } from '../components/whatsapp/SendOneDialog';
+import { SendRowButton } from '../components/whatsapp/SendRowButton';
+import { useSendability } from '../hooks/useSendability';
 import { useEventNotification } from '../hooks/useEventNotification';
 import { useAsync } from '../hooks/useAsync';
 import { formatAgorot, formatDate } from '../lib/format';
@@ -99,6 +100,14 @@ export function DonationsPage({ onOpenReceipt, onNotify }: DonationsPageProps) {
     if (message !== null) onNotify(message);
   };
   const k = query.data?.kpis;
+
+  /** W-91 – האם אפשר לשלוח הודעה על כל שורה, לכל השורות בקריאה אחת. */
+  const sendability = useSendability(
+    useMemo(
+      () => (query.data?.rows ?? []).map((r) => ({ kind: 'donation' as const, refId: r.id })),
+      [query.data],
+    ),
+  );
 
   const activeCount =
     (search ? 1 : 0) +
@@ -246,19 +255,11 @@ export function DonationsPage({ onOpenReceipt, onNotify }: DonationsPageProps) {
           const locked = r.receiptId !== null;
           return (
           <Stack direction="row" spacing={0.5}>
-            {/* W-90 – שליחה יזומה, בלי תלות בהגדרת ההודעה האוטומטית. */}
-            <Tooltip title={r.memberId === null ? he.whatsapp.notify.sendRowDisabled : he.whatsapp.notify.sendRow}>
-              <span>
-                <IconButton aria-label={r.memberId === null ? he.whatsapp.notify.sendRowDisabled : he.whatsapp.notify.sendRow}
-                  size="small"
-                  color="success"
-                  disabled={r.memberId === null}
-                  onClick={() => void offerNotification({ kind: 'donation', refId: r.id }, { force: true })}
-                >
-                  <WhatsAppIcon fontSize="small" />
-                </IconButton>
-              </span>
-            </Tooltip>
+            {/* W-90/W-91 – שליחה יזומה; האייקון ירוק רק כשהיא באמת אפשרית. */}
+            <SendRowButton
+              state={sendability({ kind: 'donation', refId: r.id })}
+              onSend={() => void offerNotification({ kind: 'donation', refId: r.id }, { force: true })}
+            />
             <Tooltip title={locked ? he.donations.lockedByReceipt : he.donations.edit}>
               <span>
                 <IconButton aria-label={locked ? he.donations.lockedByReceipt : he.donations.edit}
@@ -297,7 +298,7 @@ export function DonationsPage({ onOpenReceipt, onNotify }: DonationsPageProps) {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [onOpenReceipt],
+    [onOpenReceipt, sendability],
   );
 
   return (

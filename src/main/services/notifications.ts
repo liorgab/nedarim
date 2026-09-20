@@ -325,6 +325,90 @@ export function buildNotification(
   };
 }
 
+// ------------------------------------------- W-91: האם אפשר לשלוח בכלל
+
+export interface SendabilityRef {
+  kind: NotifyEventKind;
+  refId: number;
+}
+
+export interface Sendability extends SendabilityRef {
+  ok: boolean;
+  /** למה לא – מוצג ב-tooltip של האייקון המואפל. */
+  message?: string;
+  /**
+   * קוד הסיבה לנייד הפסול (`landline`, `too_short`…), לא הטקסט.
+   * הניסוח העברי יושב ב-`he.ts` (CLAUDE.md כלל 10), והמסך מצרף אותו.
+   */
+  mobileReason?: string;
+}
+
+/**
+ * W-91 – האם לחיצה על "שלח הודעה" בשורה תצליח, ואם לא – למה.
+ *
+ * למה זה קיים: אייקון הוואטסאפ בשורה היה תמיד ירוק ולחיץ, וגם על חבר בלי
+ * נייד תקין. הגבאי לחץ, וקיבל הודעת מערכת שמסבירה שאי אפשר. אייקון שנראה
+ * פעיל ואינו פעיל הוא שקר קטן שמתגלה רק אחרי הלחיצה; עדיף אייקון מואפל
+ * שאומר מראש מה חסר.
+ *
+ * ההחלטה עוברת דרך `decideNotify` עם `force: true` – **אותה** פונקציה
+ * שמחליטה בפועל בזמן השליחה, כדי שלא ייווצר פער בין מה שהאייקון מבטיח
+ * לבין מה שקורה. התבנית לא מרונדרת כאן: זו שאלה של יכולת, לא של תוכן.
+ */
+export function notifySendability(
+  db: Database,
+  refs: readonly SendabilityRef[],
+): Sendability[] {
+  const hasTemplate = new Map<NotifyEventKind, boolean>();
+  const modeOf = new Map<NotifyEventKind, NotifyMode>();
+
+  // טעינת העובדות תחילה, כדי שאפשר יהיה להביא את כל החברים בשאילתה אחת
+  // במקום אחת לכל שורה.
+  const facts = refs.map((ref) => {
+    if (!hasTemplate.has(ref.kind)) {
+      hasTemplate.set(ref.kind, activeEventTemplate(db, ref.kind) !== null);
+      modeOf.set(ref.kind, notifyModeFor(db, ref.kind));
+    }
+    try {
+      return LOADERS[ref.kind](db, ref.refId);
+    } catch {
+      return null;
+    }
+  });
+
+  const memberIds = [...new Set(facts.flatMap((f) => (f?.memberId != null ? [f.memberId] : [])))];
+  const byId = new Map<number, MemberForMessaging>(
+    membersForMessaging(db, memberIds).map((m) => [m.id, m]),
+  );
+
+  return refs.map((ref, i) => {
+    const memberId = facts[i]?.memberId ?? null;
+    const member = memberId === null ? undefined : byId.get(memberId);
+    const decision = decideNotify({
+      mode: modeOf.get(ref.kind) ?? 'off',
+      force: true,
+      hasMember: member !== undefined,
+      hasValidMobile: member?.mobileStatus === 'valid',
+      // `force` מתעלם מ"כבר נשלח", ולכן אין טעם לשאול את ה-DB.
+      alreadySent: false,
+      hasTemplate: hasTemplate.get(ref.kind) === true,
+    });
+
+    if (decision.kind !== 'skip') return { ...ref, ok: true };
+
+    // סיבת הנייד הספציפית עדיפה על "אין נייד תקין" הכללי: "מספר קווי"
+    // אומר לגבאי מה לתקן, והמשפט הכללי אינו אומר דבר.
+    return {
+      ...ref,
+      ok: false,
+      message: skipText(decision.reason),
+      ...(decision.reason === 'no_mobile' && member?.mobileReason
+        ? { mobileReason: member.mobileReason }
+        : {}),
+    };
+  });
+}
+
 /**
  * W-88 – החברים בעלי יתרת חוב, לשליחה המונית בלחיצה אחת.
  *
