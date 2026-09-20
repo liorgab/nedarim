@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Button,
@@ -13,6 +13,12 @@ import type { MemberWithBalance } from '@shared/types';
 import { formatE164ForDisplay, normalizeMobile } from '@shared/phone';
 import { he } from '../../i18n/he';
 import { useMemberNameMode } from '../../hooks/useMemberNameMode';
+import {
+  nameForForm,
+  nameForSave,
+  nameIsComplete,
+  type StoredName,
+} from '../../lib/memberNameForm';
 
 export interface MemberDialogProps {
   open: boolean;
@@ -40,28 +46,43 @@ export function MemberDialog({ open, member, onClose, onSaved }: MemberDialogPro
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  /**
+   * F-13 – השם כפי שהוא שמור, לפני שהטופס נגע בו.
+   *
+   * דרוש כדי להבחין בין "הגבאי שינה את השם" לבין "הגבאי פתח את החבר כדי
+   * לעדכן טלפון". במצב "שם מלא" ההבחנה הזו היא ההבדל בין שמירת הפיצול
+   * הקיים לבין מיזוג שאיש לא ביקש.
+   */
+  const storedName = useRef<StoredName | null>(null);
+
   useEffect(() => {
     if (!open) return;
-    setForm(
-      member
-        ? {
-            firstName: member.firstName,
-            lastName: member.lastName,
-            nickname: member.nickname ?? '',
-            mobile: member.mobile ?? '',
-            email: member.email ?? '',
-            address: member.address ?? '',
-            notes: member.notes ?? '',
-          }
-        : EMPTY,
-    );
+    if (!member) {
+      storedName.current = null;
+      setForm(EMPTY);
+    } else {
+      const stored = { firstName: member.firstName, lastName: member.lastName };
+      storedName.current = stored;
+      const shown = nameForForm(nameMode, stored);
+      setForm({
+        firstName: shown.firstName,
+        lastName: shown.lastName,
+        nickname: member.nickname ?? '',
+        mobile: member.mobile ?? '',
+        email: member.email ?? '',
+        address: member.address ?? '',
+        notes: member.notes ?? '',
+      });
+    }
     setDuplicateWarning(null);
     setError(null);
-  }, [open, member]);
+    // nameMode מגיע מהגדרה שנקראת אסינכרונית, ובפתיחה הראשונה הוא עדיין
+    // 'split'. בלעדיו בתלויות הטופס היה נשאר עם שני שדות עד לפתיחה הבאה.
+  }, [open, member, nameMode]);
 
   useEffect(() => {
     // במצב "שם מלא" יש שדה אחד בלבד, ולכן שם המשפחה אינו נדרש.
-    if (form.firstName.trim() === '' || (nameMode === 'split' && form.lastName.trim() === '')) {
+    if (!nameIsComplete(nameMode, { firstName: form.firstName, lastName: form.lastName })) {
       setDuplicateWarning(null);
       return;
     }
@@ -87,9 +108,14 @@ export function MemberDialog({ open, member, onClose, onSaved }: MemberDialogPro
     setError(null);
     setBusy(true);
     try {
+      const name = nameForSave(
+        nameMode,
+        { firstName: form.firstName, lastName: form.lastName },
+        storedName.current,
+      );
       const input = {
-        firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
+        firstName: name.firstName,
+        lastName: name.lastName,
         nickname: form.nickname.trim() || null,
         mobile: form.mobile.trim() || null,
         email: form.email.trim() || null,
@@ -229,7 +255,9 @@ export function MemberDialog({ open, member, onClose, onSaved }: MemberDialogPro
         <Button
           variant="contained"
           onClick={() => void submit()}
-          disabled={busy || form.firstName.trim() === '' || form.lastName.trim() === ''}
+          disabled={
+            busy || !nameIsComplete(nameMode, { firstName: form.firstName, lastName: form.lastName })
+          }
         >
           {busy ? he.app.saving : he.app.save}
         </Button>
