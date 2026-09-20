@@ -12,6 +12,7 @@ import {
 import type { MemberWithBalance } from '@shared/types';
 import { formatE164ForDisplay, normalizeMobile } from '@shared/phone';
 import { he } from '../../i18n/he';
+import { useMemberNameMode } from '../../hooks/useMemberNameMode';
 
 export interface MemberDialogProps {
   open: boolean;
@@ -33,6 +34,7 @@ const EMPTY = {
 
 /** F-11, F-12 – הוספה ועריכה של חבר, עם אזהרת כפילות שם (SPEC 6.2). */
 export function MemberDialog({ open, member, onClose, onSaved }: MemberDialogProps) {
+  const nameMode = useMemberNameMode();
   const [form, setForm] = useState(EMPTY);
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +60,8 @@ export function MemberDialog({ open, member, onClose, onSaved }: MemberDialogPro
   }, [open, member]);
 
   useEffect(() => {
-    if (form.firstName.trim() === '' || form.lastName.trim() === '') {
+    // במצב "שם מלא" יש שדה אחד בלבד, ולכן שם המשפחה אינו נדרש.
+    if (form.firstName.trim() === '' || (nameMode === 'split' && form.lastName.trim() === '')) {
       setDuplicateWarning(null);
       return;
     }
@@ -75,7 +78,7 @@ export function MemberDialog({ open, member, onClose, onSaved }: MemberDialogPro
     return () => {
       cancelled = true;
     };
-  }, [form.firstName, form.lastName, member?.id]);
+  }, [form.firstName, form.lastName, member?.id, nameMode]);
 
   const set = (key: keyof typeof EMPTY) => (e: { target: { value: string } }) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -135,23 +138,40 @@ export function MemberDialog({ open, member, onClose, onSaved }: MemberDialogPro
           {error ? <Alert severity="error">{error}</Alert> : null}
           {duplicateWarning ? <Alert severity="warning">{duplicateWarning}</Alert> : null}
 
-          <Stack direction="row" spacing={2}>
+          {/*
+            F-13 – שדה אחד או שניים, לפי ההגדרה. במצב "שם מלא" הערך נשמר
+            ב-firstName ושם המשפחה נשאר ריק, ולכן מעבר בין המצבים אינו
+            מאבד דבר: מי שינהל אחר כך בנפרד ימלא את שם המשפחה חבר-חבר.
+          */}
+          {nameMode === 'full' ? (
             <TextField
-              label={he.members.firstName}
+              label={he.memberName.full}
+              helperText={he.memberName.fullHelp}
               value={form.firstName}
               onChange={set('firstName')}
               required
               autoFocus
-              sx={{ flex: 1 }}
+              fullWidth
             />
-            <TextField
-              label={he.members.lastName}
-              value={form.lastName}
-              onChange={set('lastName')}
-              required
-              sx={{ flex: 1 }}
-            />
-          </Stack>
+          ) : (
+            <Stack direction="row" spacing={2}>
+              <TextField
+                label={he.members.firstName}
+                value={form.firstName}
+                onChange={set('firstName')}
+                required
+                autoFocus
+                sx={{ flex: 1 }}
+              />
+              <TextField
+                label={he.members.lastName}
+                value={form.lastName}
+                onChange={set('lastName')}
+                required
+                sx={{ flex: 1 }}
+              />
+            </Stack>
+          )}
           <Stack direction="row" spacing={2}>
             <TextField
               label={he.members.nickname}

@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import {
   Alert,
   Button,
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   MenuItem,
   Stack,
   TextField,
@@ -36,6 +38,9 @@ export function DonationDialog({ open, donation, onClose, onSaved }: DonationDia
   const [methodId, setMethodId] = useState<number | ''>('');
   const [amount, setAmount] = useState('');
   const [purpose, setPurpose] = useState('');
+  /** F-76 – הקבלה על שם אחר. */
+  const [otherName, setOtherName] = useState(false);
+  const [receiptName, setReceiptName] = useState('');
   const [reference, setReference] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -195,6 +200,29 @@ export function DonationDialog({ open, donation, onClose, onSaved }: DonationDia
               required={selectedMethod?.requiresReference}
               sx={{ flex: 1 }}
             />
+          </Stack>
+
+          {/* F-76 – שם אחר על הקבלה. */}
+          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={otherName}
+                  onChange={(e) => setOtherName(e.target.checked)}
+                />
+              }
+              label={he.receiptName.toggle}
+            />
+            {otherName ? (
+              <TextField
+                label={he.receiptName.label}
+                helperText={he.receiptName.help}
+                value={receiptName}
+                onChange={(e) => setReceiptName(e.target.value)}
+                autoFocus
+                sx={{ flex: 1, minWidth: 260 }}
+              />
+            ) : null}
           </Stack>
 
           <TextField

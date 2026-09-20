@@ -179,7 +179,7 @@ function normalizedMobileFor(db: Database, raw: string | null | undefined): Norm
 export function createMember(db: Database, input: MemberInput, userId: number): MemberWithBalance {
   const first = input.firstName.trim();
   const last = input.lastName.trim();
-  if (first === '' || last === '') throw new Error('שם פרטי ושם משפחה הם שדות חובה');
+  assertNameFilled(db, first, last);
 
   const mobile = normalizedMobileFor(db, input.mobile);
 
@@ -227,6 +227,24 @@ export function createMember(db: Database, input: MemberInput, userId: number): 
   return getMember(db, id)!;
 }
 
+/**
+ * F-13 – בדיקת השם לפי מצב הניהול.
+ *
+ * במצב "שם מלא" יש שדה אחד, והוא נשמר ב-`first_name`; דרישת שם משפחה שם
+ * הייתה חוסמת כל שמירה. במצב "נפרד" שני השדות חובה, כפי שהיה עד היום.
+ *
+ * הבדיקה כאן ולא רק בטופס: ה-renderer אינו הגבול, ויבוא או קריאת IPC
+ * ישירה חייבים להיתקל באותו כלל.
+ */
+function assertNameFilled(db: Database, first: string, last: string): void {
+  if (first === '') throw new Error('שם החבר הוא שדה חובה');
+
+  const mode = getSetting(db, 'member_name_mode') ?? 'split';
+  if (mode !== 'full' && last === '') {
+    throw new Error('שם פרטי ושם משפחה הם שדות חובה');
+  }
+}
+
 /** F-12 – עריכת פרטי חבר. שינוי שם אינו נוגע בקבלות שכבר הופקו (הן מקפיאות payer_name). */
 export function updateMember(
   db: Database,
@@ -236,6 +254,7 @@ export function updateMember(
 ): MemberWithBalance {
   const before = snapshot(db, 'member', id);
   if (!before) throw new Error(`חבר ${id} לא נמצא`);
+  assertNameFilled(db, input.firstName.trim(), input.lastName.trim());
 
   const mobile = normalizedMobileFor(db, input.mobile);
 

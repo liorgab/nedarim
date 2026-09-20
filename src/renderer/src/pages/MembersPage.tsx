@@ -35,6 +35,7 @@ import {
   shekelToAgorot,
 } from '../lib/format';
 import { he } from '../i18n/he';
+import { useMemberNameMode } from '../hooks/useMemberNameMode';
 
 export interface MembersPageProps {
   onOpenCard: (member: MemberWithBalance) => void;
@@ -50,6 +51,7 @@ export function MembersPage({ onOpenCard, onNotify }: MembersPageProps) {
   const [mobileStatus, setMobileStatus] = useState<'all' | 'valid' | 'not_valid'>('all');
   /** W-22 – החבר שאליו נשלחת הודעה מהלחיצה על הנייד. */
   const [sendTo, setSendTo] = useState<MemberWithBalance | null>(null);
+  const nameMode = useMemberNameMode();
   const [selected, setSelected] = useState<Set<string | number>>(new Set());
   const [wizardOpen, setWizardOpen] = useState(false);
 
@@ -150,8 +152,10 @@ export function MembersPage({ onOpenCard, onNotify }: MembersPageProps) {
       },
       {
         id: 'name',
-        label: he.members.firstName + ' ' + he.members.lastName,
-        sortValue: (r) => `${r.lastName} ${r.firstName}`,
+        // במצב "שם מלא" אין שם משפחה, ומיון לפיו היה מיון לפי מחרוזת ריקה.
+        label: nameMode === 'full' ? he.memberName.column : `${he.members.firstName} ${he.members.lastName}`,
+        sortValue: (r) =>
+          nameMode === 'full' ? r.firstName : `${r.lastName} ${r.firstName}`,
         render: (r) => (
           <Stack direction="row" spacing={1} alignItems="center">
             <span>{memberFullName(r)}</span>
@@ -227,7 +231,7 @@ export function MembersPage({ onOpenCard, onNotify }: MembersPageProps) {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [onOpenCard],
+    [onOpenCard, nameMode],
   );
 
   return (

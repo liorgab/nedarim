@@ -16,6 +16,25 @@ export interface PaymentInput {
   paymentMethodId: number;
   reference?: string | null;
   notes?: string | null;
+  /**
+   * F-76 – שם אחר על הקבלה (חברה בע"מ, עמותה, בן משפחה).
+   * ריק או `null` = הקבלה על שם החבר, כמו עד היום.
+   */
+  receiptName?: string | null;
+}
+
+/**
+ * F-76 – על שם מי תצא הקבלה.
+ *
+ * שדה שנפתח ונשאר ריק אינו בקשה לקבלה בלי שם, ולכן `trim` ואז נפילה חזרה
+ * לשם החבר. קבלה בלי שם משלם היא מסמך פסול.
+ */
+export function receiptPayerName(
+  receiptName: string | null | undefined,
+  fallback: string,
+): string {
+  const chosen = (receiptName ?? '').trim();
+  return chosen === '' ? fallback : chosen;
 }
 
 /** SPEC 6.2 – אימות. תשלום מעל היתרה מותר, עם אזהרה (יוצר יתרת זכות). */
@@ -95,8 +114,8 @@ export function createPayment(
     const info = db
       .prepare(
         `INSERT INTO vow_payment (member_id, payment_date, amount_agorot, payment_method_id,
-           reference, notes, created_at, updated_at, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           reference, notes, receipt_name, created_at, updated_at, created_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         input.memberId,
@@ -105,6 +124,9 @@ export function createPayment(
         input.paymentMethodId,
         input.reference?.trim() || null,
         input.notes?.trim() || null,
+        // נשמר על התשלום ולא רק על הקבלה: הקבלה מקפיאה את השם בהפקה
+        // (B-04), וכשמבטלים ומפיקים מחדש צריך לדעת שוב על שם מי.
+        input.receiptName?.trim() || null,
         ts,
         ts,
         userId,
@@ -131,7 +153,10 @@ export function createPayment(
       {
         sourceType: 'vow_payment',
         sourceId: paymentId,
-        payerName: `${member.firstName} ${member.lastName}`.trim(),
+        payerName: receiptPayerName(
+          input.receiptName,
+          `${member.firstName} ${member.lastName}`.trim(),
+        ),
         amountAgorot: input.amountAgorot,
         paymentMethodText: method.name,
         paymentReference: input.reference?.trim() || null,
@@ -247,6 +272,7 @@ export function issueReceiptForPayment(db: Database, paymentId: number, userId: 
         method_name: string;
         first_name: string;
         last_name: string;
+        receipt_name: string | null;
       }
     | undefined;
   if (!row) throw new Error('התשלום לא נמצא');
@@ -256,7 +282,12 @@ export function issueReceiptForPayment(db: Database, paymentId: number, userId: 
     {
       sourceType: 'vow_payment',
       sourceId: paymentId,
-      payerName: `${row.first_name} ${row.last_name}`.trim(),
+      // הפקה חוזרת מכבדת את השם שנבחר בתשלום; בלי זה היא הייתה חוזרת
+      // בשקט לשם החבר.
+      payerName: receiptPayerName(
+        row.receipt_name,
+        `${row.first_name} ${row.last_name}`.trim(),
+      ),
       amountAgorot: row.amount_agorot,
       paymentMethodText: row.method_name,
       paymentReference: row.reference,

@@ -10,6 +10,7 @@ import sql009 from './009_shavuot_key.sql?raw';
 import sql010 from './010_setup_wizard.sql?raw';
 import sql011 from './011_setup_completed_backfill.sql?raw';
 import sql012 from './012_vow_items.sql?raw';
+import sql013 from './013_receipt_name.sql?raw';
 
 export interface Migration {
   version: number;
@@ -38,6 +39,7 @@ export const MIGRATIONS: readonly Migration[] = [
   { version: 10, name: '010_setup_wizard', sql: sql010 },
   { version: 11, name: '011_setup_completed_backfill', sql: sql011 },
   { version: 12, name: '012_vow_items', sql: sql012 },
+  { version: 13, name: '013_receipt_name', sql: sql013 },
 ];
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS.reduce((max, m) => Math.max(max, m.version), 0);

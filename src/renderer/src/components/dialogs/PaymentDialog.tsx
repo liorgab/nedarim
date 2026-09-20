@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import {
   Alert,
   Button,
+  Checkbox,
   Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   Divider,
   MenuItem,
   Stack,
@@ -46,6 +48,9 @@ export function PaymentDialog({ open, member, onClose, onSaved }: PaymentDialogP
   const [methodId, setMethodId] = useState<number | ''>('');
   const [reference, setReference] = useState('');
   const [notes, setNotes] = useState('');
+  /** F-76 – הקבלה על שם אחר (חברה בע"מ, עמותה, בן משפחה). */
+  const [otherName, setOtherName] = useState(false);
+  const [receiptName, setReceiptName] = useState('');
   const [issues, setIssues] = useState<ValidationIssueDto[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -118,6 +123,9 @@ export function PaymentDialog({ open, member, onClose, onSaved }: PaymentDialogP
           paymentMethodId: methodId,
           reference: reference.trim() || null,
           notes: notes.trim() || null,
+          // הסימון הוא מה שקובע: שם שנותר בשדה אחרי שהסימון הוסר אינו
+          // בקשה לקבלה על שם אחר.
+          receiptName: otherName ? receiptName.trim() || null : null,
         },
         withReceipt,
       );
@@ -231,6 +239,29 @@ export function PaymentDialog({ open, member, onClose, onSaved }: PaymentDialogP
               onChange={(e) => setNotes(e.target.value)}
               sx={{ flex: 1 }}
             />
+          </Stack>
+
+          {/* F-76 – שם אחר על הקבלה. */}
+          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={otherName}
+                  onChange={(e) => setOtherName(e.target.checked)}
+                />
+              }
+              label={he.receiptName.toggle}
+            />
+            {otherName ? (
+              <TextField
+                label={he.receiptName.label}
+                helperText={he.receiptName.help}
+                value={receiptName}
+                onChange={(e) => setReceiptName(e.target.value)}
+                autoFocus
+                sx={{ flex: 1, minWidth: 260 }}
+              />
+            ) : null}
           </Stack>
 
           {recent.data && recent.data.length > 0 ? (

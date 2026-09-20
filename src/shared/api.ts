@@ -261,6 +261,11 @@ export interface PaymentInputDto {
   paymentMethodId: number;
   reference?: string | null;
   notes?: string | null;
+  /**
+   * F-76 – שם אחר על הקבלה (חברה בע"מ, עמותה, בן משפחה).
+   * ריק = הקבלה על שם החבר/התורם.
+   */
+  receiptName?: string | null;
 }
 
 export interface ReceiptDto {
@@ -365,6 +370,8 @@ export interface DonationDto {
   amountAgorot: number;
   isReversal: boolean;
   purpose: string | null;
+  /** F-76 – שם אחר על הקבלה. `null` = על שם התורם. */
+  receiptName: string | null;
   receiptId: number | null;
   receiptNumber: number | null;
   needsReview: boolean;
@@ -399,6 +406,11 @@ export interface DonationInputDto {
   reference?: string | null;
   amountAgorot: number;
   purpose?: string | null;
+  /**
+   * F-76 – שם אחר על הקבלה (חברה בע"מ, עמותה, בן משפחה).
+   * ריק = הקבלה על שם החבר/התורם.
+   */
+  receiptName?: string | null;
 }
 
 export interface DonationsApi {

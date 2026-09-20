@@ -1,4 +1,5 @@
 import type { Database } from 'better-sqlite3';
+import { receiptPayerName } from './payments';
 import type { IsoDate } from '@shared/types';
 import { snapshot, writeAudit } from './audit';
 import { localDateToIso } from './hebrewCalendar';
@@ -23,6 +24,8 @@ export interface Donation {
   amountAgorot: number;
   isReversal: boolean;
   purpose: string | null;
+  /** F-76 – שם אחר על הקבלה. `null` = על שם התורם. */
+  receiptName: string | null;
   receiptId: number | null;
   receiptNumber: number | null;
   needsReview: boolean;
@@ -64,6 +67,7 @@ interface Row {
   amount_agorot: number;
   is_reversal: number;
   purpose: string | null;
+  receipt_name: string | null;
   receipt_id: number | null;
   receipt_number: number | null;
   needs_review: number;
@@ -74,7 +78,7 @@ const SELECT = `
          CASE WHEN m.id IS NULL THEN NULL ELSE m.first_name || ' ' || m.last_name END AS member_name,
          d.donor_name, d.donation_type_id, dt.name AS donation_type,
          d.payment_method_id, pm.name AS payment_method, d.reference,
-         d.amount_agorot, d.is_reversal, d.purpose, d.receipt_id,
+         d.amount_agorot, d.is_reversal, d.purpose, d.receipt_name, d.receipt_id,
          r.receipt_number, d.needs_review
   FROM donation d
   JOIN donation_type dt ON dt.id = d.donation_type_id
@@ -99,6 +103,7 @@ function toDonation(r: Row): Donation {
     amountAgorot: r.amount_agorot,
     isReversal: r.is_reversal === 1,
     purpose: r.purpose,
+    receiptName: r.receipt_name,
     receiptId: r.receipt_id,
     receiptNumber: r.receipt_number,
     needsReview: r.needs_review === 1,
@@ -187,6 +192,10 @@ export interface DonationInput {
   reference?: string | null;
   amountAgorot: number;
   purpose?: string | null;
+  /**
+   * F-76 – שם אחר על הקבלה. ריק = הקבלה על שם התורם.
+   */
+  receiptName?: string | null;
 }
 
 export function validateDonation(db: Database, input: DonationInput): ValidationIssue[] {
@@ -261,8 +270,8 @@ export function createDonation(
       .prepare(
         `INSERT INTO donation (donation_number, donation_date, member_id, donor_name,
            donation_type_id, payment_method_id, reference, amount_agorot, purpose,
-           created_at, updated_at, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           receipt_name, created_at, updated_at, created_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         seq.next_value,
@@ -274,6 +283,8 @@ export function createDonation(
         input.reference?.trim() || null,
         input.amountAgorot,
         input.purpose?.trim() || null,
+        // נשמר על התרומה כדי שהפקה חוזרת של הקבלה תדע שוב על שם מי.
+        input.receiptName?.trim() || null,
         ts,
         ts,
         userId,
@@ -297,7 +308,7 @@ export function createDonation(
       {
         sourceType: 'donation',
         sourceId: donationId,
-        payerName: d.donorName,
+        payerName: receiptPayerName(d.receiptName, d.donorName),
         amountAgorot: d.amountAgorot,
         paymentMethodText: d.paymentMethod,
         paymentReference: d.reference,
@@ -386,7 +397,7 @@ export function issueReceiptForDonation(db: Database, id: number, userId: number
     {
       sourceType: 'donation',
       sourceId: id,
-      payerName: d.donorName,
+      payerName: receiptPayerName(d.receiptName, d.donorName),
       amountAgorot: d.amountAgorot,
       paymentMethodText: d.paymentMethod,
       paymentReference: d.reference,

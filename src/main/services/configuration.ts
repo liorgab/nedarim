@@ -13,6 +13,7 @@ import { getAllSettings, setSetting } from './settings';
 
 /** מפתחות ההגדרה שהמסך יודע לערוך, עם הטיפוס והאימות של כל אחד. */
 export type SettingKey =
+  | 'member_name_mode'
   | 'synagogue_name'
   | 'synagogue_city'
   | 'synagogue_address'
@@ -80,6 +81,23 @@ export const SETTING_SPECS: readonly SettingSpec[] = [
     type: 'text',
   },
   { key: 'signature_path', label: 'תמונת חתימה', group: 'receipt', type: 'image' },
+  {
+    // F-13 – שם פרטי ומשפחה בנפרד, או שדה אחד.
+    //
+    // ההגדרה משנה רק **איך הטופס שואל**, לא מה נשמר: במצב "שם מלא" הערך
+    // נכנס ל`first_name` ו-`last_name` נשאר ריק. לכן מעבר בין המצבים אינו
+    // מאבד דבר, ובית כנסת שניהל שם מלא יכול לעבור ל"נפרד" ולהשלים את שם
+    // המשפחה חבר-חבר.
+    key: 'member_name_mode',
+    label: 'ניהול שם החבר',
+    group: 'system',
+    type: 'choice',
+    choices: [
+      { value: 'split', label: 'שם פרטי ושם משפחה בנפרד' },
+      { value: 'full', label: 'שם מלא בשדה אחד' },
+    ],
+    help: 'משפיע על טופס החבר, על רשימת החברים ועל המיון. אפשר לעבור בין המצבים בכל עת בלי לאבד נתונים.',
+  },
   {
     key: 'receipt_paper_size',
     label: 'גודל נייר לקבלה',
