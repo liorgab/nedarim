@@ -7,6 +7,7 @@ import { openDatabase } from '../db/connection';
 import { seed } from '../db/seed';
 import { setSetting } from './settings';
 import { SETTING_SPECS } from './configuration';
+import { WIZARD_STEPS, wizardKeys } from './setupWizard';
 import { createMember, getMember, updateMember } from './members';
 
 /**
@@ -47,6 +48,20 @@ describe('ההגדרה', () => {
     const spec = SETTING_SPECS.find((x) => x.key === 'member_name_mode');
     expect(spec).toBeDefined();
     expect(spec?.choices?.map((c) => c.value)).toEqual(['split', 'full']);
+  });
+
+  it('יושבת בקבוצה הראשונה במסך ההגדרות', () => {
+    // קודם היא ישבה בקבוצת "מערכת וגיבוי", בתחתית הדף, לצד תיקיית
+    // הגיבוי – והמשתמש לא מצא אותה. זו החלטה שמתקבלת פעם אחת
+    // בהתחלה ומשפיעה על כל הזנת חבר, ולכן מקומה למעלה.
+    expect(SETTING_SPECS.find((x) => x.key === 'member_name_mode')?.group).toBe('synagogue');
+  });
+
+  it('מופיעה באשף ההקמה, בצעד פרטי בית הכנסת', () => {
+    // השאלה חייבת להישאל לפני שמוזן חבר ראשון: המעבר אפשרי תמיד,
+    // אבל אחרי אלף חברים הוא כרוך בהשלמה ידנית חבר-חבר.
+    expect(WIZARD_STEPS.find((x) => x.id === 'synagogue')?.keys).toContain('member_name_mode');
+    expect(wizardKeys()).toContain('member_name_mode');
   });
 
   it('ברירת המחדל היא "נפרד" – התנהגות זהה להתקנה קיימת', () => {
